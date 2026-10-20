@@ -1,0 +1,29 @@
+# Env & secrets
+.env
+.env.local
+*.pem
+*.key
+
+# Backend
+backend/bin/
+backend/tmp/
+backend/*.exe
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Postgres volume
+pgdata/
