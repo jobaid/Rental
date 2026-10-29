@@ -215,11 +215,12 @@ func (h *Handler) BookGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var v bookVehicle
+	var cid uuid.UUID
 	err := h.Pool.QueryRow(r.Context(), `
 		SELECT v.id, COALESCE(v.make,''), COALESCE(v.model,''), COALESCE(v.year,0),
-		       v.daily_rate_cents, v.deposit_cents, c.name
+		       v.daily_rate_cents, v.deposit_cents, c.name, c.id
 		FROM vehicles v JOIN companies c ON c.id=v.company_id WHERE v.id=$1
-	`, vid).Scan(&v.ID, &v.Make, &v.Model, &v.Year, &v.DailyRateCents, &v.DepositCents, &v.CompanyName)
+	`, vid).Scan(&v.ID, &v.Make, &v.Model, &v.Year, &v.DailyRateCents, &v.DepositCents, &v.CompanyName, &cid)
 	if err != nil {
 		http.Redirect(w, r, "/search", http.StatusSeeOther)
 		return
@@ -229,7 +230,6 @@ func (h *Handler) BookGet(w http.ResponseWriter, r *http.Request) {
 	addons := []addon{}
 	type ins struct{ Code, Name string; Description *string; PricePerDayCents, DeductibleCents int; IsDefault bool }
 	insurance := []ins{}
-	cid, _ := h.companyID(r.Context())
 	if cid != uuid.Nil {
 		rows, _ := h.Pool.Query(r.Context(), `SELECT code,name,description,price_cents,price_per FROM addon_catalog WHERE company_id=$1 AND is_active ORDER BY display_order,name`, cid)
 		if rows != nil {
