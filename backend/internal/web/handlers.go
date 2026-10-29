@@ -644,8 +644,12 @@ func (h *Handler) SetupPost(w http.ResponseWriter, r *http.Request) {
 		h.render(w, r, "admin/setup.html", "Setup", "", map[string]any{"Err": "Admin already exists."})
 		return
 	}
-	hash, _ := auth.HashPassword(pw)
-	// Create the one company + a company_owner.
+	hash, herr := auth.HashPassword(pw)
+	if herr != nil {
+		h.render(w, r, "admin/setup.html", "Setup", "", map[string]any{"Err": "hash password: " + herr.Error()})
+		return
+	}
+	// Create the one company + a company_owner — just the two inserts in a tx.
 	slug := strings.ToLower(strings.ReplaceAll(companyName, " ", "-"))
 	if len(slug) < 3 {
 		slug = "company"
@@ -653,53 +657,65 @@ func (h *Handler) SetupPost(w http.ResponseWriter, r *http.Request) {
 	if len(slug) > 40 {
 		slug = slug[:40]
 	}
+	// If a company with this slug already exists, suffix a short random tag so
+	// setup can be re-attempted after a prior partial failure.
+	var slugTaken bool
+	_ = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM companies WHERE slug=$1)`, slug).Scan(&slugTaken)
+	if slugTaken {
+		slug = slug + "-" + rand16()[:6]
+	}
 	var cid uuid.UUID
-	err = tx.QueryRow(ctx, `INSERT INTO companies (name, slug, status) VALUES ($1,$2,'active') RETURNING id`, companyName, slug).Scan(&cid)
-	if err != nil {
-		h.render(w, r, "admin/setup.html", "Setup", "", map[string]any{"Err": err.Error()})
+	if err := tx.QueryRow(ctx, `INSERT INTO companies (name, slug, status) VALUES ($1,$2,'active') RETURNING id`,
+		companyName, slug).Scan(&cid); err != nil {
+		h.render(w, r, "admin/setup.html", "Setup", "", map[string]any{"Err": "create company: " + err.Error()})
 		return
 	}
 	var uid uuid.UUID
-	err = tx.QueryRow(ctx, `
+	if err := tx.QueryRow(ctx, `
 		INSERT INTO users (company_id, email, password_hash, name, role, is_active, email_verified_at)
 		VALUES ($1,$2,$3,$4,'company_owner',TRUE,NOW()) RETURNING id
-	`, cid, email, hash, name).Scan(&uid)
-	if err != nil {
-		h.render(w, r, "admin/setup.html", "Setup", "", map[string]any{"Err": err.Error()})
+	`, cid, email, hash, name).Scan(&uid); err != nil {
+		h.render(w, r, "admin/setup.html", "Setup", "", map[string]any{"Err": "create user: " + err.Error()})
 		return
 	}
-	// Seed default settings + catalog (matches migration triggers for existing companies).
-	_, _ = tx.Exec(ctx, `
+	if err := tx.Commit(ctx); err != nil {
+		h.render(w, r, "admin/setup.html", "Setup", "", map[string]any{"Err": "commit setup: " + err.Error()})
+		return
+	}
+
+	// Seed defaults OUTSIDE the main transaction so a bad seed can never roll
+	// back the owner we just committed. Any failure here is logged, not fatal.
+	seed := func(label, q string, args ...any) {
+		if _, err := h.Pool.Exec(ctx, q, args...); err != nil {
+			log.Printf("setup seed %s: %v", label, err)
+		}
+	}
+	seed("settings", `
 		INSERT INTO settings (company_id, key, value)
 		VALUES ($1,'general', jsonb_build_object('currency','USD','timezone','UTC','mileageUnit','km','businessName',$2))
-		ON CONFLICT DO NOTHING
+		ON CONFLICT (company_id, key) DO NOTHING
 	`, cid, companyName)
-	_, _ = tx.Exec(ctx, `INSERT INTO addon_catalog (company_id, code, name, description, price_cents, price_per, display_order)
+	seed("addon_catalog", `
+		INSERT INTO addon_catalog (company_id, code, name, description, price_cents, price_per, display_order)
 		VALUES ($1,'child_seat','Child seat','Rear-facing child seat',500,'day',1),
 		       ($1,'booster','Booster seat','For older kids',400,'day',2),
 		       ($1,'gps','GPS unit','Portable GPS',300,'day',3),
 		       ($1,'extra_driver','Additional driver','Add a second driver',1500,'rental',4),
 		       ($1,'wifi','In-car Wi-Fi','Portable 4G hotspot',700,'day',5)
-		ON CONFLICT DO NOTHING`, cid)
-	_, _ = tx.Exec(ctx, `INSERT INTO insurance_catalog (company_id, code, name, description, price_per_day_cents, deductible_cents, is_default)
+		ON CONFLICT (company_id, code) DO NOTHING`, cid)
+	seed("insurance_catalog", `
+		INSERT INTO insurance_catalog (company_id, code, name, description, price_per_day_cents, deductible_cents, is_default)
 		VALUES ($1,'none','Decline','I have my own coverage',0,0,FALSE),
 		       ($1,'basic','Basic protection','$1,000 deductible',1500,100000,TRUE),
 		       ($1,'premium','Premium zero-deductible','Zero deductible',2900,0,FALSE)
-		ON CONFLICT DO NOTHING`, cid)
-	// branches has no unique constraint, so ON CONFLICT is invalid here.
-	// Guard against a double-seed by checking first.
+		ON CONFLICT (company_id, code) DO NOTHING`, cid)
+	// branches has no unique index — INSERT only if none exists.
 	var hasBranch bool
-	_ = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM branches WHERE company_id=$1)`, cid).Scan(&hasBranch)
+	_ = h.Pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM branches WHERE company_id=$1)`, cid).Scan(&hasBranch)
 	if !hasBranch {
-		if _, err := tx.Exec(ctx, `INSERT INTO branches (company_id, name, timezone) VALUES ($1,'Main Branch','UTC')`, cid); err != nil {
-			h.render(w, r, "admin/setup.html", "Setup", "", map[string]any{"Err": err.Error()})
-			return
-		}
+		seed("branches", `INSERT INTO branches (company_id, name, timezone) VALUES ($1,'Main Branch','UTC')`, cid)
 	}
-	if err := tx.Commit(ctx); err != nil {
-		h.render(w, r, "admin/setup.html", "Setup", "", map[string]any{"Err": err.Error()})
-		return
-	}
+
 	_ = SetCookie(w, h.Secret, Session{UserID: uid, CompanyID: &cid, Role: "company_owner", Name: name}, 12)
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }
