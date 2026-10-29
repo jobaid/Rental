@@ -98,7 +98,8 @@
           <span class="muted">Return</span><span>{{ .ToHuman }}</span>
           <span class="muted">Days</span><span>{{ .Days }}</span>
           <span class="muted">${{ dollars .Vehicle.DailyRateCents }} &times; {{ .Days }}</span><span>${{ dollars .Base }}</span>
-          {{ if gt .TaxCents 0 }}<span class="muted">{{ .TaxLabel }} ({{ .TaxRatePct }}%)</span><span>${{ dollars .TaxCents }}</span>{{ end }}
+          <span class="muted">Subtotal</span><span>${{ dollars .Base }}</span>
+          <span class="muted">{{ .TaxLabel }} ({{ .TaxRatePct }}%)</span><span>${{ dollars .TaxCents }}</span>
           <div class="total"><span>Total</span><span>${{ dollars .Total }}</span></div>
         </div>
         {{ if gt .Vehicle.DepositCents 0 }}<p class="muted" style="font-size: 12px; margin-top: 10px;">+ refundable deposit ${{ dollars .Vehicle.DepositCents }} held at pickup</p>{{ end }}

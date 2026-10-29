@@ -258,6 +258,11 @@ func (h *Handler) BookGet(w http.ResponseWriter, r *http.Request) {
 	}
 	// Reflect the effective daily rate (may be from a rate period) in the summary card.
 	v.DailyRateCents = pricing.DailyRateCents
+	// Visible debug: shows up in `journalctl -u rental-app` so we can see what
+	// the handler actually computed if a price looks wrong.
+	log.Printf("book-preview cid=%s vehicle=%s rate=%d days=%d subtotal=%d tax=%d (%d%% %s inclusive=%v) total=%d",
+		cid, vid, pricing.DailyRateCents, pricing.Days, pricing.SubtotalCents,
+		pricing.TaxCents, pricing.TaxRatePct, pricing.TaxLabel, pricing.TaxInclusive, pricing.TotalCents)
 	h.render(w, r, "public/book.html", "Checkout", "", map[string]any{
 		"Vehicle": v, "From": fromStr, "To": toStr,
 		"FromHuman": from.Format("Mon 02 Jan, 15:04"),
