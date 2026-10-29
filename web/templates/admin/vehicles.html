@@ -1,0 +1,27 @@
+{{define "content"}}
+<div class="flex-between" style="margin-bottom:16px;">
+  <h2 style="margin:0;">Fleet ({{ len .Vehicles }})</h2>
+  <a href="/admin/vehicles/new" class="btn">+ Add vehicle</a>
+</div>
+{{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
+
+<div class="card" style="padding:0;">
+<table>
+  <thead><tr><th>Fleet #</th><th>Plate</th><th>Vehicle</th><th>Daily</th><th>Status</th><th>Odometer</th></tr></thead>
+  <tbody>
+    {{ range .Vehicles }}
+    <tr>
+      <td>{{ or .FleetNumber "—" }}</td>
+      <td class="muted">{{ or .LicensePlate "—" }}</td>
+      <td>{{ .Year }} {{ .Make }} {{ .Model }}</td>
+      <td>${{ dollars .DailyRateCents }}</td>
+      <td><span class="badge {{ if eq .Status "available" }}ok{{ else }}warn{{ end }}">{{ .Status }}</span></td>
+      <td class="muted">{{ or .OdometerKm 0 }} km</td>
+    </tr>
+    {{ else }}
+    <tr><td colspan="6" class="muted" style="text-align:center; padding: 40px;">No vehicles yet. <a href="/admin/vehicles/new">Add one</a>.</td></tr>
+    {{ end }}
+  </tbody>
+</table>
+</div>
+{{end}}

@@ -1,0 +1,283 @@
+{{define "content"}}
+<style>
+  .comms { display: grid; grid-template-columns: 320px 1fr 340px; gap: 16px; height: calc(100vh - 180px); }
+  @media (max-width: 1200px) { .comms { grid-template-columns: 300px 1fr; } .comms .right { display: none; } }
+  @media (max-width: 820px)  { .comms { grid-template-columns: 1fr; } .comms .mid { display: none; } .comms.open-thread .left { display: none; } .comms.open-thread .mid { display: flex; } }
+
+  .comms > div { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); display: flex; flex-direction: column; overflow: hidden; }
+  .comms .head { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  .comms .scroll { overflow-y: auto; flex: 1; }
+
+  .thread-row { padding: 12px 14px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; gap: 10px; }
+  .thread-row:hover { background: var(--surface-2); }
+  .thread-row.active { background: var(--accent-soft); border-left: 3px solid var(--accent); padding-left: 11px; }
+  .thread-row .meta { flex: 1; min-width: 0; }
+  .thread-row .name { font-weight: 600; font-size: 14px; display: flex; justify-content: space-between; }
+  .thread-row .name .when { color: var(--muted); font-weight: 400; font-size: 11px; white-space: nowrap; }
+  .thread-row .sub { color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; }
+  .thread-row .preview { font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+  .thread-row .unread-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--accent); display: inline-block; margin-left: 6px; }
+
+  .msg { padding: 10px 14px; border-radius: 12px; margin: 8px 0; max-width: 72%; font-size: 14px; }
+  .msg.staff    { background: var(--accent); color: var(--accent-contrast); margin-left: auto; }
+  .msg.customer { background: var(--surface-3); color: var(--text); margin-right: auto; }
+  .msg.note     { background: #fef3c7; color: #78350f; border: 1px dashed #d97706; max-width: 100%; }
+  .msg .meta { font-size: 11px; opacity: 0.75; margin-bottom: 4px; }
+  .msg .body { white-space: pre-wrap; }
+  .msg .foot { font-size: 11px; margin-top: 6px; opacity: 0.75; display: flex; gap: 8px; align-items: center; }
+
+  .composer { padding: 12px 14px; border-top: 1px solid var(--border); background: var(--surface-2); }
+  .composer .tabs { display: flex; gap: 6px; margin-bottom: 8px; }
+  .composer .tabs button { background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); padding: 6px 12px; font-size: 12px; }
+  .composer .tabs button.active { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
+
+  .filter-chips { display: flex; gap: 6px; padding: 10px 14px; flex-wrap: wrap; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+  .filter-chips a { padding: 4px 10px; border-radius: 999px; font-size: 12px; background: var(--surface); border: 1px solid var(--border); color: var(--text-2); }
+  .filter-chips a.active { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
+
+  .res-row { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; }
+  .res-row dt { color: var(--muted); }
+  .res-row dd { margin: 0; }
+</style>
+
+<div class="flex-between" style="margin-bottom:12px;">
+  <div>
+    <h2 style="margin-bottom:2px;">Communication Center</h2>
+    <div class="muted" style="font-size:13px;">{{ len .Threads }} conversation{{ if ne (len .Threads) 1 }}s{{ end }} · {{ .TotalUnread }} unread{{ if not .SMTPConfigured }} · <span class="badge warn">SMTP not configured</span>{{ end }}</div>
+  </div>
+  <div class="flex">
+    <a href="/admin/communications/templates" class="btn secondary small">Templates</a>
+    <a href="/admin/communications/notifications" class="btn secondary small">Auto notifications</a>
+  </div>
+</div>
+
+{{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
+{{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+
+<div class="comms {{ if .ActiveThread }}open-thread{{ end }}">
+  <!-- LEFT: thread list -->
+  <div class="left">
+    <div class="head">
+      <form method="get" action="/admin/communications" style="display:flex; gap:8px;">
+        {{ if .Filter }}<input type="hidden" name="filter" value="{{ .Filter }}">{{ end }}
+        <input name="q" value="{{ .Q }}" placeholder="Search name, email, booking, plate" style="flex:1;">
+        <button class="secondary" type="submit">Go</button>
+      </form>
+    </div>
+    <div class="filter-chips">
+      {{ $f := .Filter }}
+      <a href="?filter=" class="{{ if eq $f "" }}active{{ end }}">All ({{ index .Counts "all" }})</a>
+      <a href="?filter=unread" class="{{ if eq $f "unread" }}active{{ end }}">Unread ({{ index .Counts "unread" }})</a>
+      <a href="?filter=email" class="{{ if eq $f "email" }}active{{ end }}">Email ({{ index .Counts "email" }})</a>
+      <a href="?filter=sms" class="{{ if eq $f "sms" }}active{{ end }}">SMS ({{ index .Counts "sms" }})</a>
+      <a href="?filter=active" class="{{ if eq $f "active" }}active{{ end }}">Active ({{ index .Counts "active" }})</a>
+      <a href="?filter=upcoming" class="{{ if eq $f "upcoming" }}active{{ end }}">Upcoming ({{ index .Counts "upcoming" }})</a>
+      <a href="?filter=overdue" class="{{ if eq $f "overdue" }}active{{ end }}">Overdue ({{ index .Counts "overdue" }})</a>
+      <a href="?filter=quotes" class="{{ if eq $f "quotes" }}active{{ end }}">Quotes ({{ index .Counts "quotes" }})</a>
+      <a href="?filter=completed" class="{{ if eq $f "completed" }}active{{ end }}">Completed ({{ index .Counts "completed" }})</a>
+    </div>
+    <div class="scroll">
+      {{ range .Threads }}
+      <a href="?t={{ .ID }}{{ if $.Q }}&q={{ $.Q }}{{ end }}{{ if $.Filter }}&filter={{ $.Filter }}{{ end }}" class="thread-row {{ if and $.ActiveThread (eq $.ActiveThread.ID .ID) }}active{{ end }}" style="color:inherit; text-decoration:none;">
+        <div class="avatar" style="width:36px; height:36px; font-size:12px;">{{ .Initials }}</div>
+        <div class="meta">
+          <div class="name"><span>{{ .CustomerName }}{{ if gt .UnreadCount 0 }}<span class="unread-dot"></span>{{ end }}</span><span class="when">{{ if .LastMessageAt }}{{ fmtTime .LastMessageAt }}{{ end }}</span></div>
+          <div class="sub">
+            <span>{{ if .BookingNumber }}{{ .BookingNumber }}{{ end }}</span>
+            <span class="flex" style="gap:4px;">
+              {{ if .HasEmail }}<span class="badge">✉</span>{{ end }}
+              {{ if .HasSMS }}<span class="badge">SMS</span>{{ end }}
+              {{ if .BookingStatus }}<span class="badge {{ statusClass .BookingStatus }}">{{ or .BookingStatus "" }}</span>{{ end }}
+            </span>
+          </div>
+          {{ if .LastPreview }}<div class="preview">{{ .LastPreview }}</div>{{ end }}
+        </div>
+      </a>
+      {{ else }}
+      <div style="padding: 30px; text-align: center;">
+        <p class="muted">No conversations yet.</p>
+        <p class="muted" style="font-size: 12px;">Email a customer about any booking to start a thread.</p>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+
+  <!-- MID: messages + composer -->
+  <div class="mid">
+    {{ if .ActiveThread }}
+    {{ $t := .ActiveThread }}
+    <div class="head">
+      <div class="flex-between">
+        <div class="flex">
+          <div class="avatar" style="width:40px; height:40px;">{{ $t.Initials }}</div>
+          <div>
+            <div style="font-weight:700;">{{ $t.CustomerName }}</div>
+            <div class="muted" style="font-size:12px;">{{ or $t.CustomerEmail "no email" }} · {{ or $t.CustomerPhone "no phone" }}{{ if $t.BookingNumber }} · <strong>{{ $t.BookingNumber }}</strong>{{ end }}</div>
+          </div>
+        </div>
+        <div class="flex">
+          {{ if $t.ReservationID }}<a href="/admin/reservations/{{ $t.ReservationID }}" class="btn secondary small">Open booking</a>{{ end }}
+          <form method="post" action="/admin/communications/{{ $t.ID }}/resolve" style="display:inline;">
+            <input type="hidden" name="status" value="{{ if eq $t.Status "open" }}resolved{{ else }}open{{ end }}">
+            <button class="ghost small">{{ if eq $t.Status "open" }}Mark resolved{{ else }}Reopen{{ end }}</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="scroll" style="padding: 0 16px;">
+      {{ if and (not .Messages) (not .Notes) }}
+      <div style="padding: 60px 20px; text-align: center;">
+        <h3>No conversation yet</h3>
+        <p class="muted">Use the composer below to send the first email or SMS.</p>
+      </div>
+      {{ end }}
+      {{ range .Messages }}
+      <div class="msg {{ if eq .SenderType "staff" }}staff{{ else if eq .SenderType "customer" }}customer{{ else }}note{{ end }}">
+        <div class="meta">
+          {{ if eq .SenderType "staff" }}{{ or .SenderName "Staff" }} → {{ or .Recipient "customer" }}
+          {{ else }}{{ or .Recipient "customer" }} → us
+          {{ end }}
+          · {{ .Channel }} · {{ fmtTime .CreatedAt }}
+        </div>
+        {{ if .Subject }}<div style="font-weight: 600; margin-bottom: 4px;">{{ .Subject }}</div>{{ end }}
+        <div class="body">{{ .Body }}</div>
+        <div class="foot">
+          <span class="badge {{ if eq .Status "sent" }}ok{{ else if eq .Status "failed" }}danger{{ else }}warn{{ end }}">{{ .Status }}</span>
+          {{ if .ErrorMessage }}<span style="color: #fecaca;">{{ .ErrorMessage }}</span>{{ end }}
+          {{ if .BookingNumber }}<span>· {{ .BookingNumber }}</span>{{ end }}
+        </div>
+      </div>
+      {{ end }}
+      {{ range .Notes }}
+      <div class="msg note">
+        <div class="meta">🔒 Internal note by {{ .Author }} · {{ fmtTime .CreatedAt }}</div>
+        <div class="body">{{ .Note }}</div>
+      </div>
+      {{ end }}
+    </div>
+
+    <div class="composer">
+      <div class="tabs">
+        <button type="button" class="active" onclick="pickTab(this,'email')">✉ Email</button>
+        <button type="button" onclick="pickTab(this,'sms')">💬 SMS</button>
+        <button type="button" onclick="pickTab(this,'note')">🔒 Internal note</button>
+      </div>
+
+      <form id="emailForm" method="post" action="/admin/communications/send-email" class="comp-form">
+        <input type="hidden" name="threadId" value="{{ $t.ID }}">
+        <input type="hidden" name="customerId" value="{{ or $t.CustomerID "" }}">
+        <input type="hidden" name="reservationId" value="{{ or $t.ReservationID "" }}">
+        <input type="hidden" name="idemp" id="emailIdemp" value="">
+        <div class="flex" style="margin-bottom: 6px;">
+          <input name="to" value="{{ or $t.CustomerEmail "" }}" placeholder="recipient@example.com" required style="flex: 1;">
+          <select name="templateCode" onchange="applyTemplate(this.value, 'email')">
+            <option value="">— Insert template —</option>
+            {{ range .Templates }}{{ if eq .Channel "email" }}<option value="{{ .Code }}">{{ .Name }}</option>{{ end }}{{ end }}
+          </select>
+        </div>
+        <input name="subject" placeholder="Subject" style="margin-bottom:6px;" required>
+        <textarea name="body" rows="4" placeholder="Write your message… Available variables: {{"{{"}}customer_name{{"}}"}}, {{"{{"}}reservation_number{{"}}"}}, {{"{{"}}vehicle_name{{"}}"}}, {{"{{"}}pickup_date{{"}}"}}, {{"{{"}}return_date{{"}}"}}, {{"{{"}}reservation_total{{"}}"}}, {{"{{"}}outstanding_balance{{"}}"}}, {{"{{"}}company_name{{"}}"}}" required></textarea>
+        <div class="flex-between" style="margin-top: 8px;">
+          <small class="muted">{{ if not $.SMTPConfigured }}SMTP not configured — messages are saved only.{{ end }}</small>
+          <button type="submit" onclick="this.form.querySelector('#emailIdemp').value=crypto.randomUUID();">Send email</button>
+        </div>
+      </form>
+
+      <form id="smsForm" method="post" action="/admin/communications/send-sms" class="comp-form" style="display:none;">
+        <input type="hidden" name="threadId" value="{{ $t.ID }}">
+        <input type="hidden" name="customerId" value="{{ or $t.CustomerID "" }}">
+        <input type="hidden" name="reservationId" value="{{ or $t.ReservationID "" }}">
+        <input type="hidden" name="idemp" id="smsIdemp" value="">
+        <div class="flex" style="margin-bottom: 6px;">
+          <input name="to" value="{{ or $t.CustomerPhone "" }}" placeholder="+15551234567" required style="flex: 1;">
+          <select name="templateCode" onchange="applyTemplate(this.value, 'sms')">
+            <option value="">— Insert template —</option>
+            {{ range .Templates }}{{ if eq .Channel "sms" }}<option value="{{ .Code }}">{{ .Name }}</option>{{ end }}{{ end }}
+          </select>
+        </div>
+        <textarea name="body" rows="3" placeholder="Keep it short — 160 chars per SMS segment." required oninput="updateSmsCount(this)"></textarea>
+        <div class="flex-between" style="margin-top: 8px;">
+          <small class="muted"><span id="smsCount">0</span>/160 · <span id="smsSegments">1</span> segment(s) — SMS provider not configured, messages are queued only.</small>
+          <button type="submit" onclick="this.form.querySelector('#smsIdemp').value=crypto.randomUUID();">Send SMS</button>
+        </div>
+      </form>
+
+      <form id="noteForm" method="post" action="/admin/communications/notes" class="comp-form" style="display:none;">
+        <input type="hidden" name="threadId" value="{{ $t.ID }}">
+        <textarea name="note" rows="3" placeholder="Internal note (never sent to the customer)" required></textarea>
+        <div class="flex-between" style="margin-top: 8px;">
+          <small class="muted">🔒 Private to staff.</small>
+          <button type="submit">Save note</button>
+        </div>
+      </form>
+    </div>
+    {{ else }}
+    <div style="padding: 60px 20px; text-align: center; margin: auto;">
+      <h3>Pick a conversation</h3>
+      <p class="muted">Choose a customer on the left to view their messages and send an email or SMS.</p>
+    </div>
+    {{ end }}
+  </div>
+
+  <!-- RIGHT: reservation panel -->
+  <div class="right">
+    <div class="head">
+      <h3 style="margin:0;">Reservation</h3>
+    </div>
+    <div class="scroll" style="padding: 14px 16px;">
+      {{ if .Reservation }}
+      {{ $r := .Reservation }}
+      <div style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">{{ $r.BookingNumber }}</div>
+      <div class="muted" style="margin-bottom: 10px;"><span class="badge {{ statusClass $r.Status }}">{{ $r.Status }}</span></div>
+      <dl class="res-row">
+        <dt>Customer</dt><dd>{{ or $r.CustomerName "—" }}</dd>
+        <dt>Vehicle</dt><dd>{{ or $r.VehicleLabel "—" }}</dd>
+        <dt>Pickup</dt><dd>{{ fmtTime $r.PickupAt }}</dd>
+        <dt>Return</dt><dd>{{ fmtTime $r.ReturnAt }}</dd>
+        <dt>Days</dt><dd>{{ $r.RentalDays }}</dd>
+        <dt>Rate</dt><dd>${{ dollars $r.DailyRateCents }}/day</dd>
+        <dt>Subtotal</dt><dd>${{ dollars $r.SubtotalCents }}</dd>
+        <dt>Tax</dt><dd>${{ dollars $r.TaxCents }}</dd>
+        <dt>Total</dt><dd><strong>${{ dollars $r.TotalCents }}</strong></dd>
+        <dt>Paid</dt><dd>${{ dollars $r.PaidCents }}</dd>
+        <dt>Balance</dt><dd><strong>${{ dollars (sub $r.TotalCents $r.PaidCents) }}</strong></dd>
+      </dl>
+      <div class="flex" style="margin-top: 14px;">
+        <a href="/admin/reservations/{{ $r.ID }}" class="btn secondary small" style="width:100%; text-align:center;">Open full reservation</a>
+      </div>
+      {{ else }}
+      <p class="muted" style="padding: 20px 0;">This conversation isn't linked to a reservation.</p>
+      {{ end }}
+    </div>
+  </div>
+</div>
+
+<script>
+  function pickTab(btn, which) {
+    document.querySelectorAll('.composer .tabs button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('emailForm').style.display = which === 'email' ? '' : 'none';
+    document.getElementById('smsForm').style.display   = which === 'sms'   ? '' : 'none';
+    document.getElementById('noteForm').style.display  = which === 'note'  ? '' : 'none';
+  }
+  const TEMPLATES = {
+    {{ range .Templates }}
+    "{{ .Code }}": { subject: {{ or .Subject "" | printf "%q" }}, body: {{ .Body | printf "%q" }}, channel: "{{ .Channel }}" },
+    {{ end }}
+  };
+  function applyTemplate(code, channel) {
+    if (!code) return;
+    const t = TEMPLATES[code]; if (!t) return;
+    const form = channel === 'email' ? document.getElementById('emailForm') : document.getElementById('smsForm');
+    if (t.subject && form.subject) form.subject.value = t.subject;
+    form.body.value = t.body;
+    if (channel === 'sms') updateSmsCount(form.body);
+  }
+  function updateSmsCount(el) {
+    const len = el.value.length;
+    document.getElementById('smsCount').textContent = len;
+    document.getElementById('smsSegments').textContent = Math.max(1, Math.ceil(len / 160));
+  }
+</script>
+{{end}}

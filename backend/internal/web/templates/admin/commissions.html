@@ -1,0 +1,22 @@
+{{define "content"}}
+<nav class="top-tabs">
+  <a href="/admin/getting-started">Getting Started</a>
+  <a href="/admin/daily-manifest">Daily Manifest</a>
+  <a href="/admin/reservations">Bookings</a>
+  <a href="/admin/active">Availability</a>
+  <a href="/admin/vehicles">Fleet</a>
+  <a href="/admin/extras">Extras</a>
+  <a href="/admin/attempts">Attempts</a>
+  <a href="/admin/commissions" class="active">Commissions</a>
+</nav>
+
+<h2>Commissions</h2>
+<div class="card" style="text-align: center; padding: 60px 30px;">
+  <h3 style="margin-top: 0;">No commission rules yet</h3>
+  <p class="muted" style="max-width: 500px; margin: 0 auto 16px;">
+    Commission tracking (e.g. for sales staff or referral partners) isn't configured on this install.
+    Enable it by adding commission rules — a rule binds a user or role to a percent of each eligible reservation or payment.
+  </p>
+  <p class="muted" style="font-size: 13px;">The feature is a straightforward addition when business rules are defined.</p>
+</div>
+{{end}}

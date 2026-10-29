@@ -1,0 +1,32 @@
+{{define "content"}}
+<div style="margin-bottom: 16px;">
+  <h2 style="margin-bottom: 4px;">Who's got what</h2>
+  <div class="muted" style="font-size:14px;">Every customer currently out with a vehicle, and every upcoming pickup.</div>
+</div>
+
+<div class="grid-cards">
+  {{ range .Rentals }}
+  <a href="/admin/reservations/{{ .ID }}" class="rental-card {{ if .Overdue }}overdue{{ end }}">
+    <div class="flex-between" style="margin-bottom: 10px; align-items: start;">
+      <div class="flex">
+        <div class="avatar">{{ initials .CustomerFirst .CustomerLast }}</div>
+        <div>
+          <div style="font-weight: 700;">{{ or .CustomerFirst "—" }} {{ .CustomerLast }}</div>
+          <div class="muted" style="font-size:13px;">{{ .Vehicle }}{{ if .LicensePlate }} · {{ .LicensePlate }}{{ end }}</div>
+        </div>
+      </div>
+      <span class="badge {{ if .Overdue }}danger{{ else if eq .Status "checked_out" }}dark{{ else }}ok{{ end }}">
+        {{ if .Overdue }}overdue{{ else }}{{ .Status }}{{ end }}
+      </span>
+    </div>
+    <div class="price-breakdown">
+      <span class="muted">Booking</span><span>{{ .BookingNumber }}</span>
+      <span class="muted">Pickup</span><span>{{ fmtTime .PickupAt }}</span>
+      <span class="muted">Return</span><span>{{ fmtTime .ReturnAt }}</span>
+    </div>
+  </a>
+  {{ else }}
+  <div class="card" style="text-align:center; padding: 48px;"><h3>No rentals active.</h3><p class="muted">When a booking is confirmed or checked out, it shows up here.</p></div>
+  {{ end }}
+</div>
+{{end}}

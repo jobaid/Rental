@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS audit_events;
+DROP TABLE IF EXISTS customers;
+DROP TABLE IF EXISTS vehicles;
+DROP TABLE IF EXISTS vehicle_categories;
+DROP TABLE IF EXISTS branches;
+DROP INDEX IF EXISTS users_platform_email_idx;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS companies;
+DROP TABLE IF EXISTS subscription_plans;

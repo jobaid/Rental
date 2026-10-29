@@ -1,0 +1,17 @@
+{{define "content"}}
+<section class="center-page">
+  <form method="post" action="/portal/login" class="card">
+    <h2>My bookings</h2>
+    <p class="muted">Sign in to view and manage your rentals.</p>
+    <label>Email</label>
+    <input type="email" name="email" required autofocus>
+    <label>Password</label>
+    <input type="password" name="password" required>
+    {{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+    <button type="submit" style="margin-top: 14px; width: 100%;">Sign in</button>
+    <p class="muted" style="font-size: 13px; margin-top: 14px; text-align:center;">
+      No account? <a href="/search">Book a car</a> and set a password during checkout.
+    </p>
+  </form>
+</section>
+{{end}}

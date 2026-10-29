@@ -1,0 +1,20 @@
+{{define "header"}}{{end}}
+{{define "footer"}}{{end}}
+{{define "content"}}
+<section class="center-page">
+  <form method="post" action="/admin/setup" class="card">
+    <h2>First-time setup</h2>
+    <p class="muted">Create the initial administrator account. This page only works until the first admin exists.</p>
+    <label>Company name</label>
+    <input name="companyName" required>
+    <label>Your name</label>
+    <input name="name" required>
+    <label>Email</label>
+    <input type="email" name="email" required>
+    <label>Password (min 8 chars)</label>
+    <input type="password" name="password" minlength="8" required>
+    {{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+    <button type="submit" style="margin-top: 14px; width: 100%;">Create &amp; sign in</button>
+  </form>
+</section>
+{{end}}

@@ -1,0 +1,44 @@
+{{define "content"}}
+<div class="flex-between" style="margin-bottom: 16px;">
+  <div>
+    <h2 style="margin: 0;">Automatic notifications</h2>
+    <div class="muted" style="font-size: 13px;">Rules that fire on reservation lifecycle events. Enable, pick a template, set a delay.</div>
+  </div>
+  <a href="/admin/communications" class="btn secondary small">← Back</a>
+</div>
+{{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
+
+<div class="card" style="padding: 0;">
+<table>
+  <thead><tr><th>Event</th><th>Channel</th><th>Template</th><th>Delay (min)</th><th>Staff too</th><th>Enabled</th><th></th></tr></thead>
+  <tbody>
+    {{ range .Rules }}
+    <tr>
+      <form method="post" action="/admin/communications/rules/{{ .ID }}">
+        <td><strong>{{ .EventType }}</strong></td>
+        <td><span class="badge">{{ .Channel }}</span></td>
+        <td>
+          <select name="templateCode" style="min-width: 220px;">
+            <option value="">—</option>
+            {{ $cur := .TemplateCode }}
+            {{ range $.Templates }}
+              {{ if or (eq .Channel $.Channel) (eq $.Channel "both") }}
+              <option value="{{ .Code }}" {{ if and $cur (eq .Code (deref $cur)) }}selected{{ end }}>{{ .Name }}</option>
+              {{ end }}
+            {{ end }}
+          </select>
+        </td>
+        <td><input type="number" name="delayMinutes" value="{{ .DelayMinutes }}" min="0" style="width: 90px;"></td>
+        <td><label><input type="checkbox" name="staffAlso" {{ if .StaffAlso }}checked{{ end }} style="width: auto;"></label></td>
+        <td><label><input type="checkbox" name="enabled" {{ if .Enabled }}checked{{ end }} style="width: auto;"></label></td>
+        <td><button class="small">Save</button></td>
+      </form>
+    </tr>
+    {{ end }}
+  </tbody>
+</table>
+</div>
+<p class="muted" style="margin-top: 16px; font-size: 13px;">
+  <strong>Note:</strong> Rules are stored and the UI is live, but a background scheduler that actually fires time-based reminders (upcoming pickup/return) is not yet running. Immediate events (booking confirmed, cancelled) that happen during a request can be wired to fire these rules in a follow-up pass.
+</p>
+{{end}}

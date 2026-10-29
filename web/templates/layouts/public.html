@@ -1,0 +1,16 @@
+{{define "header"}}
+<header class="site-header">
+  <a href="/" class="logo">mosrental</a>
+  <nav class="site-nav">
+    <a href="/">Home</a>
+    <a href="/search">Browse cars</a>
+    <a href="/portal">My booking</a>
+    {{ if .Session }}
+      {{ if eq .Session.Role "customer" }}<a href="/portal" class="btn secondary small">Account</a>
+      {{ else }}<a href="/admin" class="btn small">Dashboard</a>{{ end }}
+    {{ else }}
+      <a href="/admin/login" class="btn small">Staff sign in</a>
+    {{ end }}
+  </nav>
+</header>
+{{end}}

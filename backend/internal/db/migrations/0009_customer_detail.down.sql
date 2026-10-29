@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS customer_relations;
+ALTER TABLE customers DROP COLUMN IF EXISTS street2;
+ALTER TABLE customers DROP COLUMN IF EXISTS state;
+ALTER TABLE customers DROP COLUMN IF EXISTS zip;
+ALTER TABLE customers DROP COLUMN IF EXISTS birthday;

@@ -1,0 +1,446 @@
+{{define "content"}}
+{{ $v := .View }}
+<nav class="top-tabs">
+  <a href="/admin?view=overview"         class="{{ if eq $v "overview" }}active{{ end }}">Overview</a>
+  <a href="/admin?view=getting-started"  class="{{ if eq $v "getting-started" }}active{{ end }}">Getting Started</a>
+  <a href="/admin?view=daily-manifest"   class="{{ if eq $v "daily-manifest" }}active{{ end }}">Daily Manifest</a>
+  <a href="/admin?view=bookings"         class="{{ if eq $v "bookings" }}active{{ end }}">Bookings</a>
+  <a href="/admin?view=availability"     class="{{ if eq $v "availability" }}active{{ end }}">Availability</a>
+  <a href="/admin?view=fleet"            class="{{ if eq $v "fleet" }}active{{ end }}">Fleet</a>
+  <a href="/admin?view=extras"           class="{{ if eq $v "extras" }}active{{ end }}">Extras</a>
+  <a href="/admin?view=attempts"         class="{{ if eq $v "attempts" }}active{{ end }}">Attempts</a>
+  <a href="/admin?view=commissions"      class="{{ if eq $v "commissions" }}active{{ end }}">Commissions</a>
+</nav>
+
+{{ if eq $v "overview" }}
+  {{ template "view_overview" . }}
+{{ else if eq $v "getting-started" }}
+  {{ template "view_getting_started" . }}
+{{ else if eq $v "daily-manifest" }}
+  {{ template "view_daily_manifest" . }}
+{{ else if eq $v "bookings" }}
+  {{ template "view_bookings" . }}
+{{ else if eq $v "availability" }}
+  {{ template "view_availability" . }}
+{{ else if eq $v "fleet" }}
+  {{ template "view_fleet" . }}
+{{ else if eq $v "extras" }}
+  {{ template "view_extras" . }}
+{{ else if eq $v "attempts" }}
+  {{ template "view_attempts" . }}
+{{ else if eq $v "commissions" }}
+  {{ template "view_commissions" . }}
+{{ end }}
+{{end}}
+
+{{/* ================= OVERVIEW ================= */}}
+{{define "view_overview"}}
+<div class="flex-between" style="margin-bottom: 10px;">
+  <div>
+    <h2 style="margin: 0;">Overview</h2>
+    <div class="muted" style="font-size: 13px;">{{ .RangeLabel }} &middot; {{ .CurStart.Format "Mon 02 Jan" }} – {{ .CurEnd.Format "Mon 02 Jan" }} &middot; compared with the preceding period</div>
+  </div>
+</div>
+
+<div class="range-bar">
+  {{ $p := .Preset }}
+  <a href="?view=overview&preset=today" class="{{ if eq $p "today" }}active{{ end }}">Today</a>
+  <a href="?view=overview&preset=yesterday" class="{{ if eq $p "yesterday" }}active{{ end }}">Yesterday</a>
+  <a href="?view=overview&preset=this_week" class="{{ if eq $p "this_week" }}active{{ end }}">This week</a>
+  <a href="?view=overview&preset=last_week" class="{{ if eq $p "last_week" }}active{{ end }}">Last week</a>
+  <a href="?view=overview&preset=this_month" class="{{ if eq $p "this_month" }}active{{ end }}">This month</a>
+  <a href="?view=overview&preset=last_month" class="{{ if eq $p "last_month" }}active{{ end }}">Last month</a>
+  <a href="?view=overview&preset=this_year" class="{{ if eq $p "this_year" }}active{{ end }}">This year</a>
+  <form method="get" style="display: inline-flex; gap: 6px; align-items: center; margin-left: 10px;">
+    <input type="hidden" name="view" value="overview">
+    <input type="hidden" name="preset" value="custom">
+    <input type="date" name="from" value="{{ .From }}" style="width: auto; padding: 5px 10px; font-size: 12px;">
+    <span class="muted" style="font-size: 12px;">→</span>
+    <input type="date" name="to" value="{{ .To }}" style="width: auto; padding: 5px 10px; font-size: 12px;">
+    <button class="secondary" style="padding: 6px 12px; font-size: 12px;" type="submit">Apply</button>
+  </form>
+</div>
+
+<div class="manifest-grid">
+  <a class="manifest-tile" href="?view=daily-manifest"><div class="n">{{ .TodayPickups }}</div><div class="l">Today's pickups</div></a>
+  <a class="manifest-tile" href="?view=daily-manifest"><div class="n">{{ .TodayReturns }}</div><div class="l">Today's returns</div></a>
+  <a class="manifest-tile" href="?view=daily-manifest"><div class="n">{{ .TomorrowPickups }}</div><div class="l">Tomorrow's pickups</div></a>
+  <a class="manifest-tile" href="?view=daily-manifest"><div class="n">{{ .TomorrowReturns }}</div><div class="l">Tomorrow's returns</div></a>
+  <a class="manifest-tile" href="?view=availability"><div class="n">{{ .ActiveRentals }}</div><div class="l">Active rentals</div></a>
+  <a class="manifest-tile" href="?view=daily-manifest" style="border-color: {{ if gt .OverdueRentals 0 }}#f3cfd3{{ else }}var(--border){{ end }};"><div class="n" style="color: {{ if gt .OverdueRentals 0 }}var(--danger){{ else }}inherit{{ end }};">{{ .OverdueRentals }}</div><div class="l">Overdue</div></a>
+</div>
+
+<div class="kpi-grid">
+  {{ range .KPIs }}
+  <div class="kpi-card" title="{{ .Hint }}">
+    <div class="lbl">{{ .Label }}</div>
+    <div class="val">{{ .Value }}</div>
+    {{ if .HasDelta }}
+      {{ if gt .Delta 0.5 }}<span class="delta {{ if .Positive }}up{{ else }}down{{ end }}">↑ {{ printf "%.1f" .Delta }}%</span>
+      {{ else if lt .Delta -0.5 }}<span class="delta {{ if .Positive }}up{{ else }}down{{ end }}">↓ {{ printf "%.1f" .Delta }}%</span>
+      {{ else }}<span class="delta neutral">—</span>
+      {{ end }}
+    {{ else }}
+      <span class="delta neutral">no prev data</span>
+    {{ end }}
+  </div>
+  {{ end }}
+</div>
+
+<div class="charts-grid">
+  <div class="chart-card">
+    <h3>Bookings per day</h3>
+    {{ if .BookingsPerDay }}{{ barChart .BookingsPerDay 480 180 "#0f3d3e" }}{{ else }}<p class="muted" style="text-align:center;padding:30px 0;">No bookings in this range.</p>{{ end }}
+  </div>
+  <div class="chart-card">
+    <h3>Bookings by status</h3>
+    {{ if .BookingsByStatus }}{{ hBarChart .BookingsByStatus 400 220 }}{{ else }}<p class="muted" style="text-align:center;padding:30px 0;">No bookings.</p>{{ end }}
+  </div>
+  <div class="chart-card">
+    <h3>Revenue trend</h3>
+    {{ if .RevenuePerDay }}{{ lineChart .RevenuePerDay 480 180 "#0f3d3e" }}{{ else }}<p class="muted" style="text-align:center;padding:30px 0;">No payments.</p>{{ end }}
+  </div>
+  <div class="chart-card">
+    <h3>Fleet breakdown</h3>
+    {{ if .FleetBreakdown }}
+    <table>
+      <tbody>
+      {{ range .FleetBreakdown }}
+        <tr><td><span class="badge {{ if eq .Status "available" }}ok{{ else if eq .Status "rented" }}dark{{ else }}warn{{ end }}">{{ .Status }}</span></td><td style="text-align:right;font-weight:600;">{{ .Count }}</td></tr>
+      {{ end }}
+        <tr><td class="muted">Fleet total</td><td style="text-align:right;font-weight:700;">{{ .FleetSize }}</td></tr>
+      </tbody>
+    </table>
+    {{ else }}<p class="muted" style="text-align:center;padding:30px 0;">No vehicles yet.</p>{{ end }}
+  </div>
+</div>
+{{end}}
+
+{{/* ================= GETTING STARTED ================= */}}
+{{define "view_getting_started"}}
+<h2>Getting Started</h2>
+<p class="muted">Finish these setup steps to go live.</p>
+<div class="card" style="margin-bottom: 20px;">
+  <div class="flex-between" style="margin-bottom: 10px;">
+    <strong style="font-size: 18px;">{{ .DoneN }} of {{ .TotalN }} complete</strong>
+    <span class="muted">{{ .Progress }}%</span>
+  </div>
+  <div style="height: 10px; background: var(--surface-3); border-radius: 999px; overflow: hidden;">
+    <div style="height: 100%; width: {{ .Progress }}%; background: var(--accent); transition: width .3s;"></div>
+  </div>
+</div>
+<div class="grid-cards">
+  {{ range .Tasks }}
+  <a href="{{ .Href }}" class="card" style="text-decoration: none; color: inherit; {{ if .Done }}border-color: #c6ebcf; background: #f0faf3;{{ end }}">
+    <div class="flex-between" style="margin-bottom: 6px;">
+      <strong>{{ .Label }}</strong>
+      {{ if .Done }}<span class="badge ok">✓ Done</span>{{ else }}<span class="badge warn">To do</span>{{ end }}
+    </div>
+    <p class="muted" style="font-size: 13px; margin: 0;">{{ .Hint }}</p>
+  </a>
+  {{ end }}
+</div>
+{{end}}
+
+{{/* ================= DAILY MANIFEST ================= */}}
+{{define "view_daily_manifest"}}
+<h2>Daily manifest</h2>
+<p class="muted" style="margin-bottom: 20px;">{{ .Today }} &middot; counter operations.</p>
+
+<!-- Today's pickups -->
+<div class="card" style="padding: 0; margin-bottom: 20px;">
+  <div style="padding: 14px 18px; border-bottom: 1px solid var(--border); background: var(--accent-soft);"><h3 style="margin: 0;">🚗 Today's pickups ({{ len .TodayPickups }})</h3></div>
+  {{ if .TodayPickups }}
+  <table>
+    <thead><tr><th>Time</th><th>Booking</th><th>Customer</th><th>Contact</th><th>Vehicle</th><th>Status</th><th>Balance</th><th></th></tr></thead>
+    <tbody>
+    {{ range .TodayPickups }}
+      <tr>
+        <td class="muted">{{ fmtTime .PickupAt }}</td>
+        <td><a href="/admin/reservations/{{ .ID }}"><strong>{{ .BookingNumber }}</strong></a></td>
+        <td>{{ or .Customer "—" }}</td>
+        <td class="muted" style="font-size: 12px;">{{ or .CustomerEmail "—" }}<br>{{ or .CustomerPhone "—" }}</td>
+        <td>{{ or .Vehicle "—" }}</td>
+        <td><span class="badge {{ statusClass .Status }}">{{ .Status }}</span></td>
+        <td>${{ dollars (sub .TotalCents .PaidCents) }}</td>
+        <td><a href="/admin/reservations/{{ .ID }}" class="btn secondary small">Open</a></td>
+      </tr>
+    {{ end }}
+    </tbody>
+  </table>
+  {{ else }}<p class="muted" style="padding: 24px; text-align: center;">Nothing scheduled.</p>{{ end }}
+</div>
+
+<!-- Today's returns -->
+<div class="card" style="padding: 0; margin-bottom: 20px;">
+  <div style="padding: 14px 18px; border-bottom: 1px solid var(--border);"><h3 style="margin: 0;">↩ Today's returns ({{ len .TodayReturns }})</h3></div>
+  {{ if .TodayReturns }}
+  <table>
+    <thead><tr><th>Time</th><th>Booking</th><th>Customer</th><th>Vehicle</th><th>Status</th><th>Balance</th><th></th></tr></thead>
+    <tbody>
+    {{ range .TodayReturns }}
+      <tr>
+        <td class="muted">{{ fmtTime .ReturnAt }}</td>
+        <td><a href="/admin/reservations/{{ .ID }}"><strong>{{ .BookingNumber }}</strong></a></td>
+        <td>{{ or .Customer "—" }}</td>
+        <td>{{ or .Vehicle "—" }}</td>
+        <td><span class="badge {{ statusClass .Status }}">{{ .Status }}</span></td>
+        <td>${{ dollars (sub .TotalCents .PaidCents) }}</td>
+        <td><a href="/admin/reservations/{{ .ID }}" class="btn secondary small">Open</a></td>
+      </tr>
+    {{ end }}
+    </tbody>
+  </table>
+  {{ else }}<p class="muted" style="padding: 24px; text-align: center;">Nothing to return.</p>{{ end }}
+</div>
+
+<!-- Tomorrow pickups + returns in a row -->
+<div class="row">
+  <div class="card" style="padding: 0;">
+    <div style="padding: 14px 18px; border-bottom: 1px solid var(--border);"><h3 style="margin: 0;">Tomorrow's pickups ({{ len .TomorrowPickups }})</h3></div>
+    {{ if .TomorrowPickups }}
+    <table>
+      <thead><tr><th>Time</th><th>Booking</th><th>Customer</th><th>Vehicle</th></tr></thead>
+      <tbody>
+      {{ range .TomorrowPickups }}
+        <tr>
+          <td class="muted">{{ fmtTime .PickupAt }}</td>
+          <td><a href="/admin/reservations/{{ .ID }}">{{ .BookingNumber }}</a></td>
+          <td>{{ or .Customer "—" }}</td>
+          <td class="muted">{{ or .Vehicle "—" }}</td>
+        </tr>
+      {{ end }}
+      </tbody>
+    </table>
+    {{ else }}<p class="muted" style="padding: 24px; text-align: center;">Nothing scheduled.</p>{{ end }}
+  </div>
+  <div class="card" style="padding: 0;">
+    <div style="padding: 14px 18px; border-bottom: 1px solid var(--border);"><h3 style="margin: 0;">Tomorrow's returns ({{ len .TomorrowReturns }})</h3></div>
+    {{ if .TomorrowReturns }}
+    <table>
+      <thead><tr><th>Time</th><th>Booking</th><th>Customer</th><th>Vehicle</th></tr></thead>
+      <tbody>
+      {{ range .TomorrowReturns }}
+        <tr>
+          <td class="muted">{{ fmtTime .ReturnAt }}</td>
+          <td><a href="/admin/reservations/{{ .ID }}">{{ .BookingNumber }}</a></td>
+          <td>{{ or .Customer "—" }}</td>
+          <td class="muted">{{ or .Vehicle "—" }}</td>
+        </tr>
+      {{ end }}
+      </tbody>
+    </table>
+    {{ else }}<p class="muted" style="padding: 24px; text-align: center;">Nothing scheduled.</p>{{ end }}
+  </div>
+</div>
+
+<!-- Active rentals -->
+<div class="card" style="padding: 0; margin-top: 20px; margin-bottom: 20px;">
+  <div style="padding: 14px 18px; border-bottom: 1px solid var(--border);"><h3 style="margin: 0;">Active rentals ({{ len .ActiveList }})</h3></div>
+  {{ if .ActiveList }}
+  <table>
+    <thead><tr><th>Return by</th><th>Booking</th><th>Customer</th><th>Vehicle</th><th>Balance</th><th></th></tr></thead>
+    <tbody>
+    {{ range .ActiveList }}
+      <tr>
+        <td class="muted">{{ fmtTime .ReturnAt }}</td>
+        <td><a href="/admin/reservations/{{ .ID }}"><strong>{{ .BookingNumber }}</strong></a></td>
+        <td>{{ or .Customer "—" }}</td>
+        <td>{{ or .Vehicle "—" }}</td>
+        <td>${{ dollars (sub .TotalCents .PaidCents) }}</td>
+        <td><a href="/admin/reservations/{{ .ID }}" class="btn secondary small">Open</a></td>
+      </tr>
+    {{ end }}
+    </tbody>
+  </table>
+  {{ else }}<p class="muted" style="padding: 24px; text-align: center;">No active rentals.</p>{{ end }}
+</div>
+
+<!-- Overdue -->
+<div class="card" style="padding: 0;">
+  <div style="padding: 14px 18px; border-bottom: 1px solid var(--border); background: #fef2f2;"><h3 style="margin: 0; color: var(--danger);">⚠ Overdue rentals ({{ len .OverdueList }})</h3></div>
+  {{ if .OverdueList }}
+  <table>
+    <thead><tr><th>Was due</th><th>Overdue</th><th>Booking</th><th>Customer</th><th>Contact</th><th>Vehicle</th><th>Balance</th><th></th></tr></thead>
+    <tbody>
+    {{ range .OverdueList }}
+      <tr>
+        <td class="muted">{{ fmtTime .ReturnAt }}</td>
+        <td><span class="badge danger">{{ .OverdueBy }}</span></td>
+        <td><a href="/admin/reservations/{{ .ID }}"><strong>{{ .BookingNumber }}</strong></a></td>
+        <td>{{ or .Customer "—" }}</td>
+        <td class="muted" style="font-size: 12px;">{{ or .CustomerEmail "—" }}<br>{{ or .CustomerPhone "—" }}</td>
+        <td>{{ or .Vehicle "—" }}</td>
+        <td>${{ dollars (sub .TotalCents .PaidCents) }}</td>
+        <td><a href="/admin/reservations/{{ .ID }}" class="btn secondary small">Open</a></td>
+      </tr>
+    {{ end }}
+    </tbody>
+  </table>
+  {{ else }}<p class="muted" style="padding: 24px; text-align: center;">Nothing overdue. 🎉</p>{{ end }}
+</div>
+{{end}}
+
+{{/* ================= BOOKINGS ================= */}}
+{{define "view_bookings"}}
+<div class="flex-between" style="margin-bottom: 16px;">
+  <h2 style="margin: 0;">Recent bookings</h2>
+  <a href="/admin/reservations" class="btn secondary small">View all & manage →</a>
+</div>
+<div class="card" style="padding: 0;">
+  <table>
+    <thead><tr><th>#</th><th>Customer</th><th>Vehicle</th><th>Pickup</th><th>Return</th><th>Total</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {{ range .BookingsList }}
+      <tr>
+        <td><a href="/admin/reservations/{{ .ID }}"><strong>{{ .BookingNumber }}</strong></a></td>
+        <td>{{ or .Customer "—" }}</td>
+        <td class="muted">{{ or .Vehicle "—" }}</td>
+        <td class="muted">{{ fmtTime .PickupAt }}</td>
+        <td class="muted">{{ fmtTime .ReturnAt }}</td>
+        <td>${{ dollars .TotalCents }}</td>
+        <td><span class="badge {{ statusClass .Status }}">{{ .Status }}</span></td>
+        <td><a href="/admin/reservations/{{ .ID }}" class="btn secondary small">Open</a></td>
+      </tr>
+    {{ else }}
+      <tr><td colspan="8" class="muted" style="text-align: center; padding: 40px;">No bookings yet.</td></tr>
+    {{ end }}
+    </tbody>
+  </table>
+</div>
+{{end}}
+
+{{/* ================= AVAILABILITY ================= */}}
+{{define "view_availability"}}
+<div class="flex-between" style="margin-bottom: 16px;">
+  <div>
+    <h2 style="margin-bottom: 4px;">Who's got what</h2>
+    <div class="muted" style="font-size: 14px;">Every customer currently out with a vehicle.</div>
+  </div>
+  <a href="/admin/active" class="btn secondary small">Full board →</a>
+</div>
+<div class="grid-cards">
+  {{ range .AvailabilityList }}
+  <a href="/admin/reservations/{{ .ID }}" class="rental-card {{ if .Overdue }}overdue{{ end }}">
+    <div class="flex-between" style="margin-bottom: 10px; align-items: start;">
+      <div class="flex">
+        <div class="avatar">{{ initials .CustomerFirst .CustomerLast }}</div>
+        <div>
+          <div style="font-weight: 700;">{{ or .CustomerFirst "—" }} {{ .CustomerLast }}</div>
+          <div class="muted" style="font-size:13px;">{{ .Vehicle }}{{ if .LicensePlate }} · {{ .LicensePlate }}{{ end }}</div>
+        </div>
+      </div>
+      <span class="badge {{ if .Overdue }}danger{{ else if eq .Status "checked_out" }}dark{{ else }}ok{{ end }}">
+        {{ if .Overdue }}overdue{{ else }}{{ .Status }}{{ end }}
+      </span>
+    </div>
+    <div class="price-breakdown">
+      <span class="muted">Booking</span><span>{{ .BookingNumber }}</span>
+      <span class="muted">Pickup</span><span>{{ fmtTime .PickupAt }}</span>
+      <span class="muted">Return</span><span>{{ fmtTime .ReturnAt }}</span>
+    </div>
+  </a>
+  {{ else }}
+  <div class="card" style="text-align: center; padding: 48px;"><h3>No rentals active.</h3><p class="muted">When a booking is confirmed or checked out, it shows up here.</p></div>
+  {{ end }}
+</div>
+{{end}}
+
+{{/* ================= FLEET ================= */}}
+{{define "view_fleet"}}
+<div class="flex-between" style="margin-bottom: 16px;">
+  <h2 style="margin: 0;">Fleet ({{ len .FleetList }})</h2>
+  <div class="flex">
+    <a href="/admin/vehicles/new" class="btn">+ Add vehicle</a>
+    <a href="/admin/vehicles" class="btn secondary small">Full fleet page →</a>
+  </div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;">
+  {{ range .FleetList }}
+  <a href="/admin/vehicles/{{ .ID }}" class="vehicle-card" style="text-decoration: none; color: inherit;">
+    <div class="img" {{ if .Photo }}style="background-image:url('{{ .Photo }}')"{{ end }}>
+      {{ if not .Photo }}🚗{{ end }}
+    </div>
+    <div class="body">
+      <strong>{{ .Year }} {{ .Make }} {{ .Model }}</strong>
+      <div class="muted" style="font-size: 12px; margin: 4px 0 10px;">{{ or .LicensePlate "no plate" }}{{ if .FleetNumber }} · #{{ or .FleetNumber "" }}{{ end }}</div>
+      <div class="flex-between">
+        <div class="price">${{ dollars .DailyRateCents }}<small>/day</small></div>
+        <span class="badge {{ if eq .Status "available" }}ok{{ else if eq .Status "rented" }}dark{{ else }}warn{{ end }}">{{ .Status }}</span>
+      </div>
+    </div>
+  </a>
+  {{ else }}
+  <div class="card" style="text-align: center;"><p class="muted">No vehicles yet. <a href="/admin/vehicles/new">Add your first one</a>.</p></div>
+  {{ end }}
+</div>
+{{end}}
+
+{{/* ================= EXTRAS ================= */}}
+{{define "view_extras"}}
+<h2>Extras</h2>
+<p class="muted">Optional services customers can add during booking.</p>
+
+<div class="card" style="padding: 0; margin-bottom: 20px;">
+  <div style="padding: 14px 18px; border-bottom: 1px solid var(--border);"><h3 style="margin: 0;">Add-ons ({{ len .Addons }})</h3></div>
+  <table>
+    <thead><tr><th>Code</th><th>Name</th><th>Description</th><th>Price</th><th>Billing</th><th>Status</th></tr></thead>
+    <tbody>
+    {{ range .Addons }}
+      <tr>
+        <td style="font-family: monospace; font-size: 12px;">{{ .Code }}</td>
+        <td><strong>{{ .Name }}</strong></td>
+        <td class="muted">{{ or .Desc "—" }}</td>
+        <td>${{ dollars .PriceCents }}</td>
+        <td class="muted">per {{ .PricePer }}</td>
+        <td>{{ if .Active }}<span class="badge ok">active</span>{{ else }}<span class="badge warn">off</span>{{ end }}</td>
+      </tr>
+    {{ end }}
+    </tbody>
+  </table>
+</div>
+
+<div class="card" style="padding: 0;">
+  <div style="padding: 14px 18px; border-bottom: 1px solid var(--border);"><h3 style="margin: 0;">Insurance plans ({{ len .Insurance }})</h3></div>
+  <table>
+    <thead><tr><th>Code</th><th>Name</th><th>Description</th><th>$/day</th><th>Deductible</th><th>Default</th><th>Status</th></tr></thead>
+    <tbody>
+    {{ range .Insurance }}
+      <tr>
+        <td style="font-family: monospace; font-size: 12px;">{{ .Code }}</td>
+        <td><strong>{{ .Name }}</strong></td>
+        <td class="muted">{{ or .Desc "—" }}</td>
+        <td>${{ dollars .PerDay }}</td>
+        <td>${{ dollars .Deductible }}</td>
+        <td>{{ if .Default }}<span class="badge dark">default</span>{{ end }}</td>
+        <td>{{ if .Active }}<span class="badge ok">active</span>{{ else }}<span class="badge warn">off</span>{{ end }}</td>
+      </tr>
+    {{ end }}
+    </tbody>
+  </table>
+</div>
+{{end}}
+
+{{/* ================= ATTEMPTS ================= */}}
+{{define "view_attempts"}}
+<h2>Booking attempts</h2>
+<div class="card" style="text-align: center; padding: 60px 30px;">
+  <h3 style="margin-top: 0;">Attempt tracking is not configured</h3>
+  <p class="muted" style="max-width: 500px; margin: 0 auto;">
+    No telemetry layer records customers who started a booking but didn't complete it.
+    Enable this with a lightweight event table + instrumentation on the public engine.
+  </p>
+</div>
+{{end}}
+
+{{/* ================= COMMISSIONS ================= */}}
+{{define "view_commissions"}}
+<h2>Commissions</h2>
+<div class="card" style="text-align: center; padding: 60px 30px;">
+  <h3 style="margin-top: 0;">No commission rules yet</h3>
+  <p class="muted" style="max-width: 500px; margin: 0 auto;">
+    Commission tracking (sales staff or referral partners) isn't configured.
+    Enable it by adding commission rules binding users or roles to a percent of each eligible reservation or payment.
+  </p>
+</div>
+{{end}}

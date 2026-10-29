@@ -1,0 +1,37 @@
+{{define "content"}}
+<nav class="top-tabs">
+  <a href="/admin/getting-started" class="active">Getting Started</a>
+  <a href="/admin/daily-manifest">Daily Manifest</a>
+  <a href="/admin/reservations">Bookings</a>
+  <a href="/admin/active">Availability</a>
+  <a href="/admin/vehicles">Fleet</a>
+  <a href="/admin/extras">Extras</a>
+  <a href="/admin/attempts">Attempts</a>
+  <a href="/admin/commissions">Commissions</a>
+</nav>
+
+<h2>Getting Started</h2>
+<p class="muted">Finish these 10 steps to get your rental business live.</p>
+
+<div class="card" style="margin-bottom: 20px;">
+  <div class="flex-between" style="margin-bottom: 10px;">
+    <strong style="font-size: 18px;">{{ .DoneN }} of {{ .TotalN }} complete</strong>
+    <span class="muted">{{ .Progress }}%</span>
+  </div>
+  <div style="height: 10px; background: var(--surface-3); border-radius: 999px; overflow: hidden;">
+    <div style="height: 100%; width: {{ .Progress }}%; background: var(--accent); transition: width .3s;"></div>
+  </div>
+</div>
+
+<div class="grid-cards">
+  {{ range .Tasks }}
+  <a href="{{ .Href }}" class="card" style="text-decoration: none; color: inherit; {{ if .Done }}border-color: #a7f3d0; background: #ecfdf5;{{ end }}">
+    <div class="flex-between" style="margin-bottom: 6px;">
+      <strong>{{ .Label }}</strong>
+      {{ if .Done }}<span class="badge ok">✓ Done</span>{{ else }}<span class="badge warn">To do</span>{{ end }}
+    </div>
+    <p class="muted" style="font-size: 13px; margin: 0;">{{ .Hint }}</p>
+  </a>
+  {{ end }}
+</div>
+{{end}}

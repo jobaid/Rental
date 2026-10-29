@@ -1,0 +1,27 @@
+{{define "content"}}
+<div class="flex-between" style="margin-bottom:16px;">
+  <h2 style="margin:0;">Add vehicle</h2>
+  <a href="/admin/vehicles" class="btn ghost">Cancel</a>
+</div>
+<form method="post" action="/admin/vehicles" class="card" style="max-width: 760px;">
+  <div class="row">
+    <div><label>Fleet number</label><input name="fleetNumber"></div>
+    <div><label>License plate</label><input name="licensePlate"></div>
+    <div><label>Make *</label><input name="make" required></div>
+    <div><label>Model *</label><input name="model" required></div>
+    <div><label>Year</label><input type="number" name="year" value="2024"></div>
+    <div><label>Transmission</label>
+      <select name="transmission"><option value="automatic">Automatic</option><option value="manual">Manual</option><option value="cvt">CVT</option></select>
+    </div>
+    <div><label>Fuel</label>
+      <select name="fuelType"><option value="gasoline">Gasoline</option><option value="diesel">Diesel</option><option value="hybrid">Hybrid</option><option value="electric">Electric</option></select>
+    </div>
+    <div><label>Seats</label><input type="number" name="seats" value="4"></div>
+    <div><label>Daily rate (cents)</label><input type="number" name="dailyRateCents" value="5000" required></div>
+    <div><label>Deposit (cents)</label><input type="number" name="depositCents" value="20000"></div>
+    <div><label>Starting odometer (km)</label><input type="number" name="odometerKm" value="0"></div>
+  </div>
+  {{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+  <button style="margin-top: 14px;">Add vehicle</button>
+</form>
+{{end}}

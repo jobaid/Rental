@@ -1,0 +1,63 @@
+{{define "content"}}
+<section class="page-hero">
+  <h1>About mosrental</h1>
+  <p>Modern car rental, built by people who hate paperwork as much as you do.</p>
+</section>
+
+<section style="max-width: 1000px; margin: 0 auto; padding: 60px 24px;" class="reveal">
+  <div class="row" style="grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center;">
+    <div>
+      <h2 style="margin-top: 0;">We started with a question.</h2>
+      <p>"Why does renting a car take so long?" You wait at a counter. You sign four forms. You squint at terms you'll never read. You walk out an hour later.</p>
+      <p>We rebuilt the whole thing from scratch. Everything that can happen on your phone, does. Everything else — the keys, the eyes-on-license — happens at the counter in minutes.</p>
+      <p>We're a small team based wherever you are. One company, one standard, no franchise mess.</p>
+    </div>
+    <div style="text-align: center;">
+      <!-- Simple animated car -->
+      <svg width="280" height="140" viewBox="0 0 280 140" style="animation: bob 3s ease-in-out infinite;">
+        <ellipse cx="140" cy="130" rx="110" ry="4" fill="#000" opacity=".12"/>
+        <path d="M30,90 L42,56 C46,48 52,46 58,46 L120,46 L144,30 C150,26 156,24 162,24 L210,24 C220,24 230,30 240,46 L260,62 C264,66 264,74 260,80 L252,90 L30,90 Z" fill="#0f3d3e"/>
+        <path d="M148,34 L204,34 C212,34 220,38 226,46 L240,60 L150,60 Z" fill="#9fd1d1"/>
+        <path d="M62,50 L120,50 L120,60 L64,60 Z" fill="#9fd1d1"/>
+        <circle cx="80" cy="92" r="16" fill="#1a1a1a"/><circle cx="80" cy="92" r="9" fill="#9aa5ad"/>
+        <circle cx="210" cy="92" r="16" fill="#1a1a1a"/><circle cx="210" cy="92" r="9" fill="#9aa5ad"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<section style="background: var(--surface-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 60px 24px;" class="reveal">
+  <div style="max-width: 1000px; margin: 0 auto;">
+    <div class="section-title"><h2>What matters to us</h2></div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="ic">
+          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2 L15 8 L22 9 L17 14 L18 21 L12 18 L6 21 L7 14 L2 9 L9 8 Z"/></svg>
+        </div>
+        <h3>Honest pricing</h3>
+        <p class="muted">The number you see on the first screen is the number you pay. Taxes and deposit are shown separately so you know what's refundable.</p>
+      </div>
+      <div class="feature-card">
+        <div class="ic">
+          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6 v6 l4 2"/></svg>
+        </div>
+        <h3>Respect for your time</h3>
+        <p class="muted">We don't ask for the same information twice. Save your details once and the next rental takes two taps.</p>
+      </div>
+      <div class="feature-card">
+        <div class="ic">
+          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2 L4 6 v6 c0 5 3.5 9 8 10 c4.5 -1 8 -5 8 -10 V6 z"/></svg>
+        </div>
+        <h3>Clean fleet</h3>
+        <p class="muted">Every car is inspected before pickup and after return, with photos. If anything's off, you know before you drive.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="text-align: center; padding: 60px 24px;" class="reveal">
+  <h2 style="margin-bottom: 10px;">Got questions?</h2>
+  <p class="muted" style="margin-bottom: 24px;">We're friendlier than most rental counters.</p>
+  <a href="/contact" class="btn">Talk to us</a>
+</section>
+{{end}}

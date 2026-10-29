@@ -1,0 +1,139 @@
+{{define "content"}}
+<h2>Settings</h2>
+{{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
+{{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+
+<a id="account"></a>
+<form method="post" action="/admin/settings/account" class="card" style="max-width: 760px; margin-bottom: 20px;">
+  <h3>My account</h3>
+  <p class="muted" style="font-size: 13px; margin-top: 0;">Signed in as <strong>{{ .Session.Name }}</strong> ({{ .Session.Role }}).</p>
+  <label>Current password <span class="muted">(required)</span></label>
+  <input type="password" name="currentPassword" required autocomplete="current-password">
+  <div class="row" style="grid-template-columns: 1fr 1fr; margin-top: 10px;">
+    <div>
+      <label>New email <span class="muted">(leave blank to keep)</span></label>
+      <input type="email" name="newEmail" autocomplete="email">
+    </div>
+    <div>
+      <label>New password <span class="muted">(min 8 chars, leave blank to keep)</span></label>
+      <input type="password" name="newPassword" minlength="8" autocomplete="new-password">
+    </div>
+  </div>
+  <button type="submit" style="margin-top: 14px;">Update my account</button>
+</form>
+
+<form method="post" action="/admin/settings" class="card" style="max-width: 760px;">
+  <h3>Business info</h3>
+  <label>Business name</label><input name="businessName" value="{{ .General.businessName }}">
+  <label>Currency</label><input name="currency" value="{{ .General.currency }}">
+  <label>Timezone</label><input name="timezone" value="{{ .General.timezone }}">
+  <label>Phone</label><input name="phone" value="{{ .General.phone }}">
+  <label>Address</label><input name="address" value="{{ .General.address }}">
+
+  <hr>
+  <h3>Rental rules</h3>
+  <label>Minimum rental hours</label><input type="number" name="minHours" value="{{ .Rental.minHours }}">
+  <label>Maximum rental days</label><input type="number" name="maxDays" value="{{ .Rental.maxDays }}">
+  <label>Return grace period (minutes)</label><input type="number" name="graceMinutes" value="{{ .Rental.graceMinutes }}">
+  <label>Default deposit (cents)</label><input type="number" name="depositDefaultCents" value="{{ .Rental.depositDefaultCents }}">
+
+  <button style="margin-top:14px;">Save business &amp; rental settings</button>
+</form>
+
+<a id="tax"></a>
+<form method="post" action="/admin/settings/tax" class="card" style="max-width: 760px; margin-top: 20px;">
+  <div class="flex-between" style="margin-bottom: 6px;">
+    <h3 style="margin: 0;">Tax</h3>
+    {{ if gt .Tax.RatePct 0 }}<span class="badge ok">{{ .Tax.RatePct }}% {{ .Tax.Label }}</span>{{ else }}<span class="badge warn">No tax</span>{{ end }}
+  </div>
+  <p class="muted" style="font-size: 13px; margin: 0 0 10px;">Applied to the rental subtotal of every new booking.</p>
+  <div class="row" style="grid-template-columns: 2fr 1fr;">
+    <div>
+      <label>Label (shown to customers)</label>
+      <input name="label" value="{{ .Tax.Label }}" placeholder="VAT, GST, Sales tax, …">
+    </div>
+    <div>
+      <label>Rate (%)</label>
+      <input name="ratePct" type="number" min="0" max="100" step="1" value="{{ .Tax.RatePct }}">
+    </div>
+  </div>
+  <label style="display: flex; align-items: center; gap: 8px; margin-top: 12px;">
+    <input type="checkbox" name="inclusive" {{ if .Tax.Inclusive }}checked{{ end }} style="width: auto;">
+    Tax is <strong>inclusive</strong> (daily rates already contain the tax)
+  </label>
+  <button type="submit" style="margin-top: 14px;">Save tax</button>
+</form>
+
+<a id="smtp"></a>
+<form method="post" action="/admin/settings/smtp" class="card" style="max-width: 760px; margin-top: 20px;">
+  <div class="flex-between" style="margin-bottom: 6px;">
+    <h3 style="margin: 0;">SMTP email configuration</h3>
+    {{ if .SMTPConfigured }}
+      <span class="badge ok">Configured</span>
+    {{ else }}
+      <span class="badge warn">Not configured</span>
+    {{ end }}
+  </div>
+  <p class="muted" style="font-size: 13px; margin: 0 0 10px;">
+    Used by the Communication Center and automatic notifications.
+    {{ if .SMTP.fromEnv }}<br><strong>Showing values from environment variables.</strong> Save to override them in the database.{{ end }}
+  </p>
+
+  <div class="row" style="grid-template-columns: 2fr 1fr;">
+    <div>
+      <label>SMTP host</label>
+      <input name="host" value="{{ .SMTP.host }}" placeholder="smtp.gmail.com">
+    </div>
+    <div>
+      <label>Port</label>
+      <input name="port" type="number" min="1" max="65535" value="{{ .SMTP.port }}" placeholder="587">
+    </div>
+  </div>
+
+  <label>Username</label>
+  <input name="user" value="{{ .SMTP.user }}" placeholder="you@gmail.com" autocomplete="off">
+
+  <label>Password / app password</label>
+  <input name="pass" type="password" placeholder="{{ if .SMTP.hasPassword }}•••••••• (leave blank to keep current){{ else }}app password or SMTP password{{ end }}" autocomplete="new-password">
+
+  <div class="row" style="grid-template-columns: 1fr 1fr;">
+    <div>
+      <label>From email</label>
+      <input name="fromAddr" type="email" value="{{ .SMTP.fromAddr }}" placeholder="rentals@yourdomain.com">
+    </div>
+    <div>
+      <label>From name</label>
+      <input name="fromName" value="{{ .SMTP.fromName }}" placeholder="mosrental">
+    </div>
+  </div>
+
+  <p class="muted" style="font-size: 12px; margin: 10px 0 0;">
+    <strong>Gmail users:</strong> generate an app password at <code>myaccount.google.com → Security → 2-Step Verification → App passwords</code>. Use <code>smtp.gmail.com</code> port <code>587</code>.<br>
+    <strong>SendGrid:</strong> <code>smtp.sendgrid.net</code> port <code>587</code>, user <code>apikey</code>, password = your API key.
+  </p>
+
+  <div class="flex" style="margin-top: 14px;">
+    <button type="submit">Save SMTP settings</button>
+    <button type="button" class="secondary" onclick="document.getElementById('testPanel').style.display='block';">Send test email</button>
+  </div>
+</form>
+
+<div id="testPanel" class="card" style="max-width: 760px; margin-top: 20px; display: none;">
+  <form method="post" action="/admin/settings/smtp-test">
+    <h3>Send a test email</h3>
+    <p class="muted" style="font-size: 13px; margin-top: 0;">Uses the saved SMTP configuration. Save first if you just made changes.</p>
+    <label>Recipient</label>
+    <input name="to" type="email" required placeholder="you@example.com">
+    <div class="flex" style="margin-top: 12px;">
+      <button type="submit">Send test</button>
+      <button type="button" class="ghost" onclick="document.getElementById('testPanel').style.display='none';">Cancel</button>
+    </div>
+  </form>
+</div>
+
+{{ if or .Flash .Err }}
+<script>
+  if (location.hash === '#smtp') { history.replaceState(null, '', location.pathname + location.search); setTimeout(() => document.getElementById('smtp').scrollIntoView({ behavior: 'smooth' }), 50); }
+</script>
+{{ end }}
+{{end}}

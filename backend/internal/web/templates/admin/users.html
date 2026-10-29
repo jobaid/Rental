@@ -1,0 +1,86 @@
+{{define "content"}}
+<div class="flex-between" style="margin-bottom: 16px;">
+  <div>
+    <h2 style="margin: 0;">Users &amp; access</h2>
+    <div class="muted" style="font-size: 13px;">Staff accounts and their roles. The signed-in user is {{ .Session.Name }} ({{ .Session.Role }}).</div>
+  </div>
+</div>
+
+{{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
+{{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+
+<div class="row" style="grid-template-columns: 1.4fr 1fr; align-items: start;">
+  <div class="card" style="padding: 0;">
+    <table>
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last sign-in</th><th>Actions</th></tr></thead>
+      <tbody>
+      {{ range .Users }}
+        <tr>
+          <td><strong>{{ .Name }}</strong></td>
+          <td class="muted">{{ .Email }}</td>
+          <td>
+            <form method="post" action="/admin/users/{{ .ID }}/role" style="display: inline-flex; gap: 4px;">
+              <select name="role" style="width: auto; padding: 4px 8px; font-size: 12px;">
+                {{ $cur := .Role }}
+                {{ range $.Roles }}<option value="{{ .Code }}" {{ if eq .Code $cur }}selected{{ end }}>{{ .Label }}</option>{{ end }}
+              </select>
+              <button class="small secondary">Save</button>
+            </form>
+          </td>
+          <td>{{ if .IsActive }}<span class="badge ok">active</span>{{ else }}<span class="badge warn">disabled</span>{{ end }}</td>
+          <td class="muted" style="font-size: 12px;">{{ if .LastLoginAt }}{{ fmtTime .LastLoginAt }}{{ else }}never{{ end }}</td>
+          <td>
+            <div class="flex" style="gap: 4px;">
+              <form method="post" action="/admin/users/{{ .ID }}/toggle" style="display: inline;">
+                <button class="small secondary">{{ if .IsActive }}Disable{{ else }}Enable{{ end }}</button>
+              </form>
+              <button type="button" class="small ghost" onclick="openReset({{ .ID.String | printf "%q" }}, {{ .Name | printf "%q" }})">Reset password</button>
+            </div>
+          </td>
+        </tr>
+      {{ else }}
+        <tr><td colspan="6" class="muted" style="text-align: center; padding: 40px;">No staff users yet.</td></tr>
+      {{ end }}
+      </tbody>
+    </table>
+  </div>
+
+  <form method="post" action="/admin/users" class="card">
+    <h3>Add user</h3>
+    <label>Full name</label>
+    <input name="name" required>
+    <label>Email</label>
+    <input type="email" name="email" required autocomplete="off">
+    <label>Role</label>
+    <select name="role">
+      {{ range .Roles }}<option value="{{ .Code }}" {{ if eq .Code "reservation_agent" }}selected{{ end }}>{{ .Label }}</option>{{ end }}
+    </select>
+    <label>Initial password <span class="muted">(min 8 chars)</span></label>
+    <input type="password" name="password" minlength="8" required autocomplete="new-password">
+    <button type="submit" style="margin-top: 14px; width: 100%;">Add user</button>
+    <p class="muted" style="font-size: 12px; margin-top: 10px;">Share the password securely with the new user. They can change it from Settings → My account.</p>
+  </form>
+</div>
+
+<!-- Reset password modal -->
+<div id="resetModal" style="display: none; position: fixed; inset: 0; background: rgba(10,10,10,0.45); z-index: 100; align-items: center; justify-content: center; padding: 20px;">
+  <form method="post" id="resetForm" style="background: var(--surface); border-radius: var(--radius-lg); padding: 28px; max-width: 420px; width: 100%; box-shadow: var(--shadow-lg);">
+    <h3 style="margin-top: 0;">Reset password</h3>
+    <p class="muted" style="margin-top: 0;">Set a new password for <strong id="resetName"></strong>.</p>
+    <label>New password (min 8 chars)</label>
+    <input type="password" name="password" minlength="8" required autocomplete="new-password">
+    <div class="flex" style="margin-top: 14px;">
+      <button type="submit">Reset</button>
+      <button type="button" class="secondary" onclick="document.getElementById('resetModal').style.display='none';">Cancel</button>
+    </div>
+  </form>
+</div>
+<script>
+  function openReset(id, name) {
+    document.getElementById('resetName').textContent = name;
+    document.getElementById('resetForm').action = '/admin/users/' + id + '/reset-password';
+    const m = document.getElementById('resetModal');
+    m.style.display = 'flex';
+  }
+</script>
+{{end}}

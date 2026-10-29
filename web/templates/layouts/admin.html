@@ -1,0 +1,31 @@
+{{define "header"}}
+<div class="admin-top">
+  <a href="/admin" class="brand">mosrental &middot; admin</a>
+  <div class="user">
+    {{ if .Session }}{{ .Session.Name }} ({{ .Session.Role }}) &middot; <a href="/admin/logout">Sign out</a>{{ end }}
+  </div>
+</div>
+<div class="admin-shell">
+  <aside class="admin-side">
+    <h4>Operations</h4>
+    <a href="/admin" class="{{ if eq .Active "dashboard" }}active{{ end }}">Dashboard</a>
+    <a href="/admin/active" class="{{ if eq .Active "active" }}active{{ end }}">Who's got what</a>
+    <a href="/admin/reservations" class="{{ if eq .Active "reservations" }}active{{ end }}">Reservations</a>
+    <a href="/admin/calendar" class="{{ if eq .Active "calendar" }}active{{ end }}">Calendar</a>
+    <h4>Fleet</h4>
+    <a href="/admin/vehicles" class="{{ if eq .Active "vehicles" }}active{{ end }}">Vehicles</a>
+    <a href="/admin/maintenance" class="{{ if eq .Active "maintenance" }}active{{ end }}">Maintenance</a>
+    <h4>People</h4>
+    <a href="/admin/customers" class="{{ if eq .Active "customers" }}active{{ end }}">Customers</a>
+    <a href="/admin/licenses" class="{{ if eq .Active "licenses" }}active{{ end }}">License review</a>
+    <h4>Business</h4>
+    <a href="/admin/reports" class="{{ if eq .Active "reports" }}active{{ end }}">Reports</a>
+    <a href="/admin/settings" class="{{ if eq .Active "settings" }}active{{ end }}">Settings</a>
+  </aside>
+  <main class="admin-main">
+{{end}}
+
+{{define "footer"}}
+  </main>
+</div>
+{{end}}

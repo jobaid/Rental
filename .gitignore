@@ -1,0 +1,41 @@
+# Env & secrets
+.env
+.env.local
+*.pem
+*.key
+
+# Dev tool state (per-developer, do not commit)
+.claude/
+.engram/
+.graphify/
+
+# Archived legacy React frontend (kept locally, not committed)
+frontend-react-archive/
+
+# Backend
+backend/bin/
+backend/tmp/
+backend/*.exe
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Postgres volume
+pgdata/
+
+# Uploaded files (dev local store)
+backend/storage/
+storage/

@@ -1,0 +1,56 @@
+{{define "content"}}
+<nav class="top-tabs">
+  <a href="/admin/getting-started">Getting Started</a>
+  <a href="/admin/daily-manifest">Daily Manifest</a>
+  <a href="/admin/reservations">Bookings</a>
+  <a href="/admin/active">Availability</a>
+  <a href="/admin/vehicles">Fleet</a>
+  <a href="/admin/extras" class="active">Extras</a>
+  <a href="/admin/attempts">Attempts</a>
+  <a href="/admin/commissions">Commissions</a>
+</nav>
+
+<h2>Extras</h2>
+<p class="muted">Optional services customers can add during booking.</p>
+
+<div class="card" style="padding: 0; margin-bottom: 20px;">
+  <div style="padding: 14px 18px; border-bottom: 1px solid var(--border);"><h3 style="margin: 0;">Add-ons ({{ len .Addons }})</h3></div>
+  <table>
+    <thead><tr><th>Code</th><th>Name</th><th>Description</th><th>Price</th><th>Billing</th><th>Status</th></tr></thead>
+    <tbody>
+    {{ range .Addons }}
+      <tr>
+        <td style="font-family: monospace; font-size: 12px;">{{ .Code }}</td>
+        <td><strong>{{ .Name }}</strong></td>
+        <td class="muted">{{ or .Desc "—" }}</td>
+        <td>${{ dollars .PriceCents }}</td>
+        <td class="muted">per {{ .PricePer }}</td>
+        <td>{{ if .Active }}<span class="badge ok">active</span>{{ else }}<span class="badge warn">off</span>{{ end }}</td>
+      </tr>
+    {{ end }}
+    </tbody>
+  </table>
+</div>
+
+<div class="card" style="padding: 0;">
+  <div style="padding: 14px 18px; border-bottom: 1px solid var(--border);"><h3 style="margin: 0;">Insurance plans ({{ len .Insurance }})</h3></div>
+  <table>
+    <thead><tr><th>Code</th><th>Name</th><th>Description</th><th>$/day</th><th>Deductible</th><th>Default</th><th>Status</th></tr></thead>
+    <tbody>
+    {{ range .Insurance }}
+      <tr>
+        <td style="font-family: monospace; font-size: 12px;">{{ .Code }}</td>
+        <td><strong>{{ .Name }}</strong></td>
+        <td class="muted">{{ or .Desc "—" }}</td>
+        <td>${{ dollars .PerDay }}</td>
+        <td>${{ dollars .Deductible }}</td>
+        <td>{{ if .Default }}<span class="badge dark">default</span>{{ end }}</td>
+        <td>{{ if .Active }}<span class="badge ok">active</span>{{ else }}<span class="badge warn">off</span>{{ end }}</td>
+      </tr>
+    {{ end }}
+    </tbody>
+  </table>
+</div>
+
+<p class="muted" style="font-size: 12px; margin-top: 16px;">Extras are seeded automatically at setup. Full editing UI (prices, descriptions, enable/disable) is on the roadmap.</p>
+{{end}}

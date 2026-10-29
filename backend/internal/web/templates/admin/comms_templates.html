@@ -1,0 +1,64 @@
+{{define "content"}}
+<div class="flex-between" style="margin-bottom: 16px;">
+  <div>
+    <h2 style="margin: 0;">Message templates</h2>
+    <div class="muted" style="font-size: 13px;">Reusable email and SMS templates with {{"{{"}}variable{{"}}"}} placeholders.</div>
+  </div>
+  <a href="/admin/communications" class="btn secondary small">← Back to Communication Center</a>
+</div>
+{{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
+
+<div class="row" style="grid-template-columns: 1.3fr 1fr;">
+  <div class="card" style="padding: 0;">
+    <table>
+      <thead><tr><th>Name</th><th>Code</th><th>Channel</th><th>Active</th><th></th></tr></thead>
+      <tbody>
+        {{ range .Templates }}
+        <tr>
+          <td><strong>{{ .Name }}</strong></td>
+          <td class="muted" style="font-family: monospace; font-size: 12px;">{{ .Code }}</td>
+          <td><span class="badge">{{ .Channel }}</span></td>
+          <td>{{ if .IsActive }}<span class="badge ok">on</span>{{ else }}<span class="badge warn">off</span>{{ end }}</td>
+          <td><button class="small secondary" onclick='loadTpl({{ .ID.String | printf "%q" }}, {{ .Code | printf "%q" }}, {{ .Name | printf "%q" }}, {{ .Channel | printf "%q" }}, {{ or .Subject "" | printf "%q" }}, {{ .Body | printf "%q" }}, {{ .IsActive }})'>Edit</button></td>
+        </tr>
+        {{ end }}
+      </tbody>
+    </table>
+  </div>
+  <form class="card" method="post" action="/admin/communications/templates">
+    <h3>Edit template</h3>
+    <input type="hidden" name="id" id="tplId" value="">
+    <label>Code (slug)</label>
+    <input name="code" id="tplCode" required>
+    <label>Name</label>
+    <input name="name" id="tplName" required>
+    <label>Channel</label>
+    <select name="channel" id="tplChannel">
+      <option value="email">Email</option>
+      <option value="sms">SMS</option>
+    </select>
+    <label>Subject (email only)</label>
+    <input name="subject" id="tplSubject">
+    <label>Body — supports {{"{{"}}customer_name{{"}}"}}, {{"{{"}}reservation_number{{"}}"}}, {{"{{"}}vehicle_name{{"}}"}}, {{"{{"}}pickup_date{{"}}"}}, {{"{{"}}pickup_time{{"}}"}}, {{"{{"}}pickup_location{{"}}"}}, {{"{{"}}return_date{{"}}"}}, {{"{{"}}return_time{{"}}"}}, {{"{{"}}return_location{{"}}"}}, {{"{{"}}reservation_total{{"}}"}}, {{"{{"}}amount_paid{{"}}"}}, {{"{{"}}outstanding_balance{{"}}"}}, {{"{{"}}security_deposit{{"}}"}}, {{"{{"}}company_name{{"}}"}}, {{"{{"}}company_phone{{"}}"}}, {{"{{"}}company_email{{"}}"}}</label>
+    <textarea name="body" id="tplBody" rows="10" required></textarea>
+    <label style="display: flex; align-items: center; gap: 8px; margin-top: 10px;">
+      <input type="checkbox" name="isActive" id="tplActive" checked style="width: auto;"> Active
+    </label>
+    <div class="flex" style="margin-top: 14px;">
+      <button type="submit">Save template</button>
+      <button type="button" class="secondary" onclick="document.getElementById('tplId').value=''; document.querySelectorAll('#tplCode,#tplName,#tplSubject,#tplBody').forEach(el=>el.value=''); document.getElementById('tplChannel').value='email'; document.getElementById('tplActive').checked=true;">New template</button>
+    </div>
+  </form>
+</div>
+<script>
+  function loadTpl(id, code, name, channel, subject, body, active) {
+    document.getElementById('tplId').value = id;
+    document.getElementById('tplCode').value = code;
+    document.getElementById('tplName').value = name;
+    document.getElementById('tplChannel').value = channel;
+    document.getElementById('tplSubject').value = subject;
+    document.getElementById('tplBody').value = body;
+    document.getElementById('tplActive').checked = active;
+  }
+</script>
+{{end}}

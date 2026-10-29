@@ -1,0 +1,14 @@
+{{define "content"}}
+<section class="container narrow">
+  <div class="card" style="text-align:center;">
+    <h2>You're booked! &#127881;</h2>
+    <p>Booking number: <strong>{{ .BookingNumber }}</strong></p>
+    <p>Total: <strong>${{ dollars .TotalCents }}</strong></p>
+    <p class="muted">We'll email you a photo-upload link closer to pickup day so you can submit before/after shots of the vehicle.</p>
+    <div class="flex" style="justify-content:center; margin-top: 16px;">
+      <a href="/portal" class="btn">Open my booking</a>
+      <a href="/" class="btn secondary">Done</a>
+    </div>
+  </div>
+</section>
+{{end}}

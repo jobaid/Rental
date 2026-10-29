@@ -1,0 +1,54 @@
+{{define "content"}}
+<div class="flex-between" style="margin-bottom:16px;">
+  <h2 style="margin:0;">Add vehicle</h2>
+  <a href="/admin/vehicles" class="btn ghost">Cancel</a>
+</div>
+
+<form method="post" action="/admin/vehicles" class="card" style="max-width: 860px;">
+  <h3>Basics</h3>
+  <div class="row">
+    <div><label>Fleet number</label><input name="fleetNumber"></div>
+    <div><label>License plate</label><input name="licensePlate"></div>
+    <div><label>Make *</label><input name="make" required></div>
+    <div><label>Model *</label><input name="model" required></div>
+    <div><label>Year</label><input type="number" name="year" value="2024"></div>
+    <div><label>Transmission</label>
+      <select name="transmission"><option value="automatic">Automatic</option><option value="manual">Manual</option><option value="cvt">CVT</option></select>
+    </div>
+    <div><label>Fuel</label>
+      <select name="fuelType"><option value="gasoline">Gasoline</option><option value="diesel">Diesel</option><option value="hybrid">Hybrid</option><option value="electric">Electric</option></select>
+    </div>
+    <div><label>Seats</label><input type="number" name="seats" value="4"></div>
+    <div><label>Daily rate (cents)</label><input type="number" name="dailyRateCents" value="5000" required></div>
+    <div><label>Deposit (cents)</label><input type="number" name="depositCents" value="20000"></div>
+    <div><label>Starting odometer (km)</label><input type="number" name="odometerKm" value="0"></div>
+  </div>
+
+  <hr>
+  <h3>Features</h3>
+  <p class="muted" style="font-size: 12px; margin-top: 0;">Shown to customers on the vehicle detail page.</p>
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; margin-top: 10px;">
+    {{ range .FeatureList }}
+    <label class="card" style="padding: 10px 12px; display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer; font-size: 13px;">
+      <input type="checkbox" name="feature" value="{{ .Key }}" style="width: auto;"> {{ .Label }}
+    </label>
+    {{ end }}
+  </div>
+
+  <hr>
+  <h3>Available add-ons</h3>
+  <p class="muted" style="font-size: 12px; margin-top: 0;">Which optional services can customers add when they book this car. Leave all unchecked to offer the full catalog.</p>
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin-top: 10px;">
+    {{ range .Addons }}
+    <label class="card" style="padding: 10px 12px; display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer; font-size: 13px;">
+      <input type="checkbox" name="addon" value="{{ .Code }}" style="width: auto;">
+      <span><strong>{{ .Name }}</strong><br><span class="muted" style="font-size: 11px;">${{ dollars .PriceCents }}/{{ .PricePer }}</span></span>
+    </label>
+    {{ end }}
+    {{ if not .Addons }}<p class="muted">No add-ons configured yet.</p>{{ end }}
+  </div>
+
+  {{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+  <button style="margin-top: 20px;">Add vehicle</button>
+</form>
+{{end}}

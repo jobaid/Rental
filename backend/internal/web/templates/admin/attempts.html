@@ -1,0 +1,22 @@
+{{define "content"}}
+<nav class="top-tabs">
+  <a href="/admin/getting-started">Getting Started</a>
+  <a href="/admin/daily-manifest">Daily Manifest</a>
+  <a href="/admin/reservations">Bookings</a>
+  <a href="/admin/active">Availability</a>
+  <a href="/admin/vehicles">Fleet</a>
+  <a href="/admin/extras">Extras</a>
+  <a href="/admin/attempts" class="active">Attempts</a>
+  <a href="/admin/commissions">Commissions</a>
+</nav>
+
+<h2>Booking attempts</h2>
+<div class="card" style="text-align: center; padding: 60px 30px;">
+  <h3 style="margin-top: 0;">Attempt tracking is not configured</h3>
+  <p class="muted" style="max-width: 500px; margin: 0 auto 16px;">
+    The system doesn't yet record customers who started a booking but didn't complete it.
+    Adding this needs a lightweight telemetry layer on the public booking engine and a dedicated table.
+  </p>
+  <p class="muted" style="font-size: 13px;">Nothing to show until it's enabled.</p>
+</div>
+{{end}}

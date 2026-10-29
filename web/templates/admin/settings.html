@@ -1,0 +1,21 @@
+{{define "content"}}
+<h2>Settings</h2>
+{{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
+<form method="post" action="/admin/settings" class="card" style="max-width: 760px;">
+  <h3>Business info</h3>
+  <label>Business name</label><input name="businessName" value="{{ .General.businessName }}">
+  <label>Currency</label><input name="currency" value="{{ .General.currency }}">
+  <label>Timezone</label><input name="timezone" value="{{ .General.timezone }}">
+  <label>Phone</label><input name="phone" value="{{ .General.phone }}">
+  <label>Address</label><input name="address" value="{{ .General.address }}">
+
+  <hr>
+  <h3>Rental rules</h3>
+  <label>Minimum rental hours</label><input type="number" name="minHours" value="{{ .Rental.minHours }}">
+  <label>Maximum rental days</label><input type="number" name="maxDays" value="{{ .Rental.maxDays }}">
+  <label>Return grace period (minutes)</label><input type="number" name="graceMinutes" value="{{ .Rental.graceMinutes }}">
+  <label>Default deposit (cents)</label><input type="number" name="depositDefaultCents" value="{{ .Rental.depositDefaultCents }}">
+
+  <button style="margin-top:14px;">Save settings</button>
+</form>
+{{end}}

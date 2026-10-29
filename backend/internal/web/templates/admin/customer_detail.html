@@ -1,0 +1,334 @@
+{{define "content"}}
+<style>
+  .cust-title { font-size: 32px; font-weight: 800; letter-spacing: -0.03em; margin: 0 0 20px; }
+  .cust-title .sep { color: var(--muted); font-weight: 500; margin: 0 8px; }
+  .cust-title .name { color: var(--text); }
+  .cust-title .label { color: var(--accent); }
+
+  .cust-tabs { display: flex; gap: 24px; border-bottom: 1px solid var(--border); margin-bottom: 24px; overflow-x: auto; }
+  .cust-tabs a {
+    padding: 12px 2px; font-weight: 600; color: var(--muted); font-size: 14px;
+    border-bottom: 2px solid transparent; white-space: nowrap;
+    transition: color .12s, border-color .12s;
+  }
+  .cust-tabs a:hover { color: var(--text); }
+  .cust-tabs a.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .cust-tabs .count { background: var(--surface-3); color: var(--muted); font-size: 10px; padding: 1px 7px; border-radius: 999px; margin-left: 6px; font-weight: 700; }
+  .cust-tabs a.active .count { background: var(--accent-soft); color: var(--accent); }
+
+  .collapsible > summary {
+    list-style: none; cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 18px; font-weight: 700; color: var(--text);
+    padding: 4px 0 14px;
+  }
+  .collapsible > summary::-webkit-details-marker { display: none; }
+  .collapsible > summary::before {
+    content: "▾"; font-size: 14px; color: var(--muted);
+    transition: transform .18s;
+  }
+  .collapsible:not([open]) > summary::before { transform: rotate(-90deg); }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 22px; }
+  .form-grid.full > * { grid-column: 1 / -1; }
+  .form-grid label { margin: 0 0 6px; }
+
+  .insight-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 999px;
+    background: var(--info-soft); color: var(--info);
+    font-weight: 600; font-size: 13px; border: 1px solid #c7d9f1;
+  }
+
+  .rel-table {
+    border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden; background: var(--surface);
+  }
+  .rel-table .head {
+    display: grid; grid-template-columns: 1fr 1fr;
+    padding: 10px 14px; background: var(--surface-2);
+    color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 700;
+    border-bottom: 1px solid var(--border);
+  }
+  .rel-table .row { display: grid; grid-template-columns: 1fr 1fr auto; padding: 10px 14px; border-bottom: 1px solid var(--divider); font-size: 13px; align-items: center; }
+  .rel-table .row:last-child { border-bottom: 0; }
+  .rel-table .add { padding: 12px; text-align: center; }
+  .rel-table .add summary {
+    cursor: pointer; color: var(--accent); font-weight: 600; font-size: 13px;
+    list-style: none; padding: 2px 0;
+  }
+  .rel-table .add summary::-webkit-details-marker { display: none; }
+  .rel-table .add[open] summary { margin-bottom: 10px; }
+  .rel-table .add form { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; }
+
+  .top-actions .btn, .top-actions button { padding: 9px 14px; font-size: 13px; }
+  .top-actions .icon-btn { background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); width: 40px; height: 38px; padding: 0; display: grid; place-items: center; }
+</style>
+
+{{ $c := .C }}
+<div class="flex-between" style="margin-bottom: 20px; align-items: start;">
+  <h1 class="cust-title">
+    <span class="label">Customers</span><span class="sep">-</span><span class="name">{{ $c.FirstName }} {{ $c.LastName }}</span>
+  </h1>
+  <div class="flex top-actions" style="gap: 8px;">
+    <a href="/admin/reservations?customer={{ $c.ID }}" class="btn" style="background: var(--nav-bg); border-color: var(--nav-bg);">
+      New Reservation
+    </a>
+    <a href="/admin/communications?t=&c={{ $c.ID }}" class="btn secondary" style="gap: 8px;">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+      Communication Center
+    </a>
+    <button type="button" class="icon-btn" onclick="window.print()" title="Print">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><rect x="4" y="9" width="16" height="9" rx="2"/><rect x="6" y="14" width="12" height="7"/></svg>
+    </button>
+    <form method="post" action="/admin/customers/{{ $c.ID }}/delete" style="display: inline;" onsubmit="return confirm('Delete this customer? This can\\'t be undone.');">
+      <button class="btn danger" style="gap: 6px;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
+        Delete
+      </button>
+    </form>
+    <a href="?tab=audit" class="btn secondary" style="gap: 6px;">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>
+      Audit Logs
+    </a>
+  </div>
+</div>
+
+{{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
+{{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+
+<!-- Tabs -->
+<nav class="cust-tabs">
+  {{ $t := .Tab }}
+  <a href="?tab=contact" class="{{ if eq $t "contact" }}active{{ end }}">Contact</a>
+  <a href="?tab=reservations" class="{{ if eq $t "reservations" }}active{{ end }}">Reservations <span class="count">{{ .ReservationsCount }}</span></a>
+  <a href="?tab=quotes" class="{{ if eq $t "quotes" }}active{{ end }}">Quotes <span class="count">{{ .QuotesCount }}</span></a>
+  <a href="?tab=alerts" class="{{ if eq $t "alerts" }}active{{ end }}">Alerts</a>
+  <a href="?tab=payment" class="{{ if eq $t "payment" }}active{{ end }}">Payment Methods</a>
+  <a href="?tab=checklist" class="{{ if eq $t "checklist" }}active{{ end }}">Checklist</a>
+  <a href="?tab=files" class="{{ if eq $t "files" }}active{{ end }}">Files <span class="count">{{ .FilesCount }}</span></a>
+  <a href="?tab=notes" class="{{ if eq $t "notes" }}active{{ end }}">Notes</a>
+  <a href="?tab=audit" class="{{ if eq $t "audit" }}active{{ end }}">Audit Logs</a>
+</nav>
+
+<div class="row" style="grid-template-columns: 2.2fr 1fr; gap: 32px; align-items: start;">
+  <!-- LEFT: tab content -->
+  <div>
+  {{ if eq $t "contact" }}
+    <form method="post" action="/admin/customers/{{ $c.ID }}">
+      <details class="collapsible" open>
+        <summary>Customer Information</summary>
+        <div class="form-grid">
+          <div><label>First Name</label><input name="firstName" value="{{ $c.FirstName }}" required></div>
+          <div><label>Last Name</label><input name="lastName" value="{{ $c.LastName }}" required></div>
+          <div><label>Email Address</label><input name="email" type="email" value="{{ or $c.Email "" }}"></div>
+          <div><label>Phone Number</label><input name="phone" value="{{ or $c.Phone "" }}"></div>
+          <div><label>Street</label><input name="address" value="{{ or $c.Address "" }}"></div>
+          <div><label>Street 2</label><input name="street2" value="{{ or $c.Street2 "" }}"></div>
+          <div><label>City</label><input name="city" value="{{ or $c.City "" }}"></div>
+          <div><label>State</label><input name="state" value="{{ or $c.State "" }}"></div>
+          <div><label>Zip</label><input name="zip" value="{{ or $c.Zip "" }}"></div>
+          <div><label>Country</label><input name="country" value="{{ or $c.Country "" }}"></div>
+          <div>
+            <label>Birthday</label>
+            <input name="birthday" type="date" value="{{ or $c.Birthday "" }}">
+          </div>
+        </div>
+      </details>
+
+      <details class="collapsible" open style="margin-top: 20px;">
+        <summary>Driver's License</summary>
+        <div class="form-grid">
+          <div><label>License number</label><input name="licenseNumber" value="{{ or $c.LicenseNumber "" }}"></div>
+          <div><label>License expiry</label><input name="licenseExpiry" type="date" value="{{ or $c.LicenseExpiry "" }}"></div>
+        </div>
+      </details>
+
+      <div style="margin-top: 22px; display: flex; gap: 10px; align-items: center;">
+        <button type="submit">Save changes</button>
+        <a href="/admin/customers" class="btn ghost">Back to list</a>
+      </div>
+    </form>
+
+  {{ else if eq $t "reservations" }}
+    <h3>Reservations</h3>
+    <div class="card" style="padding: 0;">
+      <table>
+        <thead><tr><th>Booking #</th><th>Vehicle</th><th>Pickup</th><th>Return</th><th>Total</th><th>Status</th></tr></thead>
+        <tbody>
+        {{ range .Reservations }}
+          <tr>
+            <td><a href="/admin/reservations/{{ .ID }}"><strong>{{ .BookingNumber }}</strong></a></td>
+            <td class="muted">{{ .Vehicle }}</td>
+            <td class="muted">{{ fmtTime .PickupAt }}</td>
+            <td class="muted">{{ fmtTime .ReturnAt }}</td>
+            <td>${{ dollars .TotalCents }}</td>
+            <td><span class="badge {{ statusClass .Status }}">{{ .Status }}</span></td>
+          </tr>
+        {{ else }}
+          <tr><td colspan="6" class="muted" style="text-align: center; padding: 40px;">No reservations yet.</td></tr>
+        {{ end }}
+        </tbody>
+      </table>
+    </div>
+
+  {{ else if eq $t "quotes" }}
+    <h3>Pending quotes</h3>
+    <div class="card" style="padding: 0;">
+      <table>
+        <thead><tr><th>Quote #</th><th>Vehicle</th><th>Pickup</th><th>Return</th><th>Total</th></tr></thead>
+        <tbody>
+        {{ range .Reservations }}
+          <tr>
+            <td><a href="/admin/reservations/{{ .ID }}">{{ .BookingNumber }}</a></td>
+            <td>{{ .Vehicle }}</td>
+            <td class="muted">{{ fmtTime .PickupAt }}</td>
+            <td class="muted">{{ fmtTime .ReturnAt }}</td>
+            <td>${{ dollars .TotalCents }}</td>
+          </tr>
+        {{ else }}
+          <tr><td colspan="5" class="muted" style="text-align: center; padding: 40px;">No pending quotes.</td></tr>
+        {{ end }}
+        </tbody>
+      </table>
+    </div>
+
+  {{ else if eq $t "alerts" }}
+    <h3>Alerts</h3>
+    {{ if .Alerts }}
+      {{ range .Alerts }}
+      <div class="card" style="padding: 14px 18px; margin-bottom: 10px; border-left: 3px solid var(--warn); background: var(--warn-soft);">
+        <strong>{{ .Message }}</strong>
+      </div>
+      {{ end }}
+    {{ else }}
+      <div class="card" style="text-align: center; padding: 40px;"><p class="muted">No active alerts.</p></div>
+    {{ end }}
+
+  {{ else if eq $t "payment" }}
+    <h3>Payment methods</h3>
+    <div class="card" style="text-align: center; padding: 48px;">
+      <p class="muted">Stored payment methods aren't configured on this install.</p>
+      <p class="muted" style="font-size: 13px;">When Stripe is wired, saved cards appear here.</p>
+    </div>
+
+  {{ else if eq $t "checklist" }}
+    <h3>Checklist</h3>
+    <div class="card">
+      <label style="display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--divider);">
+        <input type="checkbox" style="width: auto;" {{ if $c.LicenseNumber }}checked disabled{{ end }}>
+        Driver's license on file
+      </label>
+      <label style="display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--divider);">
+        <input type="checkbox" style="width: auto;" {{ if $c.Email }}checked disabled{{ end }}>
+        Email captured
+      </label>
+      <label style="display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--divider);">
+        <input type="checkbox" style="width: auto;" {{ if $c.Phone }}checked disabled{{ end }}>
+        Phone captured
+      </label>
+      <label style="display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--divider);">
+        <input type="checkbox" style="width: auto;" {{ if $c.Address }}checked disabled{{ end }}>
+        Billing address captured
+      </label>
+      <label style="display: flex; align-items: center; gap: 10px; padding: 10px 0;">
+        <input type="checkbox" style="width: auto;" {{ if gt .FilesCount 0 }}checked disabled{{ end }}>
+        At least one document uploaded
+      </label>
+    </div>
+
+  {{ else if eq $t "files" }}
+    <h3>Files</h3>
+    <div class="card" style="padding: 0;">
+      <table>
+        <thead><tr><th>Kind</th><th>Status</th><th>Uploaded</th><th>File</th></tr></thead>
+        <tbody>
+        {{ range .Files }}
+          <tr>
+            <td><strong>{{ .Kind }}</strong></td>
+            <td><span class="badge {{ if eq .Status "verified" }}ok{{ else if eq .Status "rejected" }}danger{{ else }}warn{{ end }}">{{ .Status }}</span></td>
+            <td class="muted">{{ fmtTime .CreatedAt }}</td>
+            <td><a href="{{ .URL }}" target="_blank">Open</a></td>
+          </tr>
+        {{ else }}
+          <tr><td colspan="4" class="muted" style="text-align: center; padding: 40px;">No files uploaded.</td></tr>
+        {{ end }}
+        </tbody>
+      </table>
+    </div>
+
+  {{ else if eq $t "notes" }}
+    <h3>Internal notes</h3>
+    <form method="post" action="/admin/customers/{{ $c.ID }}/notes">
+      <textarea name="notes" rows="12" placeholder="Private notes about this customer (not shown to them)…">{{ or $c.Notes "" }}</textarea>
+      <button type="submit" style="margin-top: 12px;">Save notes</button>
+    </form>
+
+  {{ else if eq $t "audit" }}
+    <h3>Audit log</h3>
+    <div class="card" style="padding: 0;">
+      <table>
+        <thead><tr><th>When</th><th>Action</th><th>By</th></tr></thead>
+        <tbody>
+        {{ range .Audit }}
+          <tr>
+            <td class="muted">{{ fmtTime .CreatedAt }}</td>
+            <td style="font-family: monospace; font-size: 12px;">{{ .Action }}</td>
+            <td>{{ or .Actor "system" }}</td>
+          </tr>
+        {{ else }}
+          <tr><td colspan="3" class="muted" style="text-align: center; padding: 40px;">No audit events yet.</td></tr>
+        {{ end }}
+        </tbody>
+      </table>
+    </div>
+  {{ end }}
+  </div>
+
+  <!-- RIGHT: Relations + Insights -->
+  <aside>
+    <details class="collapsible" open>
+      <summary>Relations</summary>
+      <div class="rel-table">
+        <div class="head"><div>Contact/Item</div><div>Relation</div></div>
+        {{ range .Relations }}
+        <div class="row">
+          <div>{{ .RelatedContact }}</div>
+          <div class="muted">{{ .Relation }}</div>
+          <form method="post" action="/admin/customers/{{ $c.ID }}/relations/{{ .ID }}/delete" style="display: inline;" onsubmit="return confirm('Remove this relation?');">
+            <button class="ghost small" style="color: var(--danger); font-size: 11px;">×</button>
+          </form>
+        </div>
+        {{ end }}
+        <details class="add" style="border-top: 1px solid var(--divider);">
+          <summary>+ Add Contact / Item</summary>
+          <form method="post" action="/admin/customers/{{ $c.ID }}/relations" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0 10px 10px;">
+            <input name="relatedContact" placeholder="Name or item" required>
+            <input name="relation" placeholder="Relation" required>
+            <button type="submit" style="grid-column: 1 / -1; font-size: 12px; padding: 6px;">Add</button>
+          </form>
+        </details>
+      </div>
+    </details>
+
+    <h3 style="margin: 28px 0 12px; font-size: 18px;">Customer Insights</h3>
+    <div class="flex" style="gap: 8px;">
+      {{ if .IsNewCustomer }}
+        <span class="insight-pill">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 7v10M7 12h10"/></svg>
+          New Customer
+        </span>
+      {{ else }}
+        <span class="insight-pill" style="background: var(--success-soft); color: var(--success); border-color: #c6ebcf;">
+          Returning · {{ .ReservationsCount }} bookings
+        </span>
+      {{ end }}
+      {{ if gt .OverdueCount 0 }}
+        <span class="insight-pill" style="background: var(--danger-soft); color: var(--danger); border-color: #f3cfd3;">
+          Overdue
+        </span>
+      {{ end }}
+    </div>
+  </aside>
+</div>
+{{end}}
