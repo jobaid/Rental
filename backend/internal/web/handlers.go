@@ -686,7 +686,16 @@ func (h *Handler) SetupPost(w http.ResponseWriter, r *http.Request) {
 		       ($1,'basic','Basic protection','$1,000 deductible',1500,100000,TRUE),
 		       ($1,'premium','Premium zero-deductible','Zero deductible',2900,0,FALSE)
 		ON CONFLICT DO NOTHING`, cid)
-	_, _ = tx.Exec(ctx, `INSERT INTO branches (company_id, name, timezone) VALUES ($1,'Main Branch','UTC') ON CONFLICT DO NOTHING`, cid)
+	// branches has no unique constraint, so ON CONFLICT is invalid here.
+	// Guard against a double-seed by checking first.
+	var hasBranch bool
+	_ = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM branches WHERE company_id=$1)`, cid).Scan(&hasBranch)
+	if !hasBranch {
+		if _, err := tx.Exec(ctx, `INSERT INTO branches (company_id, name, timezone) VALUES ($1,'Main Branch','UTC')`, cid); err != nil {
+			h.render(w, r, "admin/setup.html", "Setup", "", map[string]any{"Err": err.Error()})
+			return
+		}
+	}
 	if err := tx.Commit(ctx); err != nil {
 		h.render(w, r, "admin/setup.html", "Setup", "", map[string]any{"Err": err.Error()})
 		return
