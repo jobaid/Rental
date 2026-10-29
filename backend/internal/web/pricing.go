@@ -149,6 +149,47 @@ func (h *Handler) RatePeriodCreate(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin/vehicles/"+vid+"?flash=Rate+period+added#rates", http.StatusSeeOther)
 }
 
+// VehicleRateUpdate updates the vehicle's default daily rate (and optional
+// deposit). No date range — this is the base rate used when no rate period
+// matches the pickup date. For season pricing, use rate periods instead.
+func (h *Handler) VehicleRateUpdate(w http.ResponseWriter, r *http.Request) {
+	s, _ := From(r)
+	cid := *s.CompanyID
+	vid := chi.URLParam(r, "id")
+	_ = r.ParseForm()
+	// Accept either dollars (e.g. "45.00") or raw cents from the form.
+	daily := parseDollarsOrCents(r.FormValue("dailyRateDollars"), r.FormValue("dailyRateCents"))
+	deposit := parseDollarsOrCents(r.FormValue("depositDollars"), r.FormValue("depositCents"))
+	if daily <= 0 {
+		http.Redirect(w, r, "/admin/vehicles/"+vid+"?err=Daily+rate+required#rates", http.StatusSeeOther)
+		return
+	}
+	_, err := h.Pool.Exec(r.Context(), `
+		UPDATE vehicles SET daily_rate_cents=$1, deposit_cents=COALESCE(NULLIF($2,0), deposit_cents), updated_at=NOW()
+		WHERE company_id=$3 AND id=$4
+	`, daily, deposit, cid, vid)
+	if err != nil {
+		http.Redirect(w, r, "/admin/vehicles/"+vid+"?err="+err.Error()+"#rates", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/admin/vehicles/"+vid+"?flash=Daily+rate+updated#rates", http.StatusSeeOther)
+}
+
+// parseDollarsOrCents reads a dollar amount (e.g. "45" or "45.00") OR raw
+// cents, whichever is non-empty, and returns cents.
+func parseDollarsOrCents(dollars, cents string) int {
+	if d := strings.TrimSpace(dollars); d != "" {
+		if strings.Contains(d, ".") {
+			f, _ := strconv.ParseFloat(d, 64)
+			return int(f*100 + 0.5)
+		}
+		n, _ := strconv.Atoi(d)
+		return n * 100
+	}
+	n, _ := strconv.Atoi(strings.TrimSpace(cents))
+	return n
+}
+
 func (h *Handler) RatePeriodDelete(w http.ResponseWriter, r *http.Request) {
 	s, _ := From(r)
 	cid := *s.CompanyID

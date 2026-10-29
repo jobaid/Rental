@@ -57,13 +57,31 @@
     <a id="rates"></a>
     <div class="card" style="margin-top: 16px;">
       <div class="flex-between" style="margin-bottom: 10px;">
-        <h3 style="margin: 0;">Rate periods</h3>
-        <small class="muted">Season / holiday pricing. Default daily rate is used when no period matches.</small>
+        <h3 style="margin: 0;">Pricing</h3>
+        <small class="muted">Set the base daily rate. Add dated rate periods only if you want seasonal pricing.</small>
       </div>
-      <p class="muted" style="font-size: 13px; margin-top: 0;">
-        Default daily rate: <strong>${{ dollars .V.DailyRateCents }}</strong>
-        &middot; Tax: <strong>{{ .Tax.RatePct }}%</strong> ({{ .Tax.Label }}, {{ if .Tax.Inclusive }}inclusive{{ else }}exclusive{{ end }})
-      </p>
+
+      <!-- Base rate — no dates required -->
+      <form method="post" action="/admin/vehicles/{{ .V.ID }}/rate" style="margin-bottom: 18px;">
+        <div class="row" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div>
+            <label>Default daily rate ($)</label>
+            <input type="number" step="0.01" min="0" name="dailyRateDollars" value="{{ printf "%.2f" (divf .V.DailyRateCents 100.0) }}" required>
+          </div>
+          <div>
+            <label>Deposit ($) <span class="muted" style="font-weight:400;">(optional)</span></label>
+            <input type="number" step="0.01" min="0" name="depositDollars" value="{{ printf "%.2f" (divf .V.DepositCents 100.0) }}">
+          </div>
+        </div>
+        <div style="margin-top: 10px; display:flex; gap:10px; align-items:center;">
+          <button type="submit">Update daily rate</button>
+          <small class="muted">Applies immediately to new bookings. Tax: <strong>{{ .Tax.RatePct }}%</strong> ({{ .Tax.Label }}, {{ if .Tax.Inclusive }}inclusive{{ else }}exclusive{{ end }}) — change in Settings → Tax.</small>
+        </div>
+      </form>
+
+      <hr style="border:0; border-top:1px solid var(--border); margin:16px 0;">
+      <h4 style="margin: 0 0 8px;">Seasonal rate periods <small class="muted" style="font-weight:400;">(optional)</small></h4>
+      <p class="muted" style="font-size: 13px; margin-top: 0;">If a booking's pickup date falls inside an active period below, that period's rate overrides the default above. Leave empty to always use the default.</p>
 
       {{ if .Periods }}
       <table>

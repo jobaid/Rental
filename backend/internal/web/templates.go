@@ -22,6 +22,7 @@ var funcs = template.FuncMap{
 	"fmtDay":       func(t time.Time) string { return t.Format("Mon 1/2") },
 	"sub":          func(a, b int) int { if r := a - b; r > 0 { return r }; return 0 },
 	"add1":         func(a int) int { return a + 1 },
+	"divf":         func(a int, b float64) float64 { return float64(a) / b },
 	"dict": func(values ...any) (map[string]any, error) {
 		if len(values)%2 != 0 { return nil, fmt.Errorf("dict needs even args") }
 		m := map[string]any{}
