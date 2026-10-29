@@ -1,7 +1,10 @@
 {{define "header"}}
 <header class="site-header">
   <a href="/" class="logo">mosrental</a>
-  <nav class="site-nav">
+  <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" onclick="var n=document.getElementById('site-nav');n.classList.toggle('open');this.setAttribute('aria-expanded',n.classList.contains('open'));">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <nav class="site-nav" id="site-nav">
     <a href="/">Home</a>
     <a href="/search">Browse cars</a>
     <a href="/about">About</a>
