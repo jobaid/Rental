@@ -1,0 +1,151 @@
+{{define "content"}}
+<section class="hero-wrap">
+  <h1>Drive what you love.<br><span class="accent">Rent in under a minute.</span></h1>
+  <p>Pick a date. Pick a car. Pay when you pick it up. No queues, no paperwork.</p>
+
+  <form action="/search" method="get" class="search-widget">
+    <div>
+      <label>Pickup</label>
+      <input type="datetime-local" name="from" value="{{ .DefaultFrom }}" required>
+    </div>
+    <div>
+      <label>Return</label>
+      <input type="datetime-local" name="to" value="{{ .DefaultTo }}" required>
+    </div>
+    <div>
+      <label>Branch</label>
+      <select name="branch">
+        <option value="">Any branch</option>
+        {{ range .Branches }}<option value="{{ .ID }}">{{ .Name }}</option>{{ end }}
+      </select>
+    </div>
+    <button type="submit">Search cars</button>
+  </form>
+
+  <!-- Scene: clouds drifting, road moving, car bobbing -->
+  <div class="scene" aria-hidden="true">
+    <!-- Clouds -->
+    <svg class="cloud" width="80" height="30" viewBox="0 0 80 30"><ellipse cx="20" cy="18" rx="20" ry="10" fill="#fff" opacity=".9"/><ellipse cx="42" cy="14" rx="22" ry="12" fill="#fff" opacity=".9"/><ellipse cx="62" cy="18" rx="16" ry="9" fill="#fff" opacity=".9"/></svg>
+    <svg class="cloud c2" width="100" height="36" viewBox="0 0 100 36"><ellipse cx="24" cy="22" rx="24" ry="12" fill="#fff"/><ellipse cx="52" cy="18" rx="28" ry="14" fill="#fff"/><ellipse cx="78" cy="22" rx="20" ry="11" fill="#fff"/></svg>
+    <svg class="cloud c3" width="60" height="24" viewBox="0 0 60 24"><ellipse cx="16" cy="14" rx="16" ry="8" fill="#fff"/><ellipse cx="34" cy="12" rx="18" ry="10" fill="#fff"/><ellipse cx="50" cy="14" rx="12" ry="8" fill="#fff"/></svg>
+
+    <!-- Road + car -->
+    <div class="road"></div>
+    <svg class="car" viewBox="0 0 220 90" width="240" height="100">
+      <!-- Shadow -->
+      <ellipse cx="110" cy="85" rx="88" ry="5" fill="#000" opacity=".18"/>
+      <!-- Body -->
+      <path d="M20,62 L30,36 C32,30 36,28 42,28 L96,28 L116,16 C120,13 125,12 130,12 L170,12 C180,12 188,18 196,30 L210,42 C212,45 212,50 210,54 L204,62 L20,62 Z"
+            fill="#0f3d3e" stroke="#06212a" stroke-width="1.2"/>
+      <!-- Window gradient -->
+      <defs>
+        <linearGradient id="win" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stop-color="#9fd1d1"/>
+          <stop offset="1" stop-color="#c8e4e3"/>
+        </linearGradient>
+        <linearGradient id="rim" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stop-color="#9aa5ad"/>
+          <stop offset="1" stop-color="#5c6670"/>
+        </linearGradient>
+      </defs>
+      <!-- Front window -->
+      <path d="M118,22 L164,22 C170,22 176,25 180,30 L192,42 L120,42 Z" fill="url(#win)"/>
+      <!-- Rear window -->
+      <path d="M48,32 L96,32 L96,42 L50,42 Z" fill="url(#win)"/>
+      <!-- Door line + handle -->
+      <line x1="108" y1="42" x2="108" y2="62" stroke="#06212a" stroke-width="1" opacity=".4"/>
+      <rect x="86" y="48" width="12" height="2.5" rx="1" fill="#06212a" opacity=".5"/>
+      <!-- Head/tail lights -->
+      <rect x="203" y="46" width="7" height="5" rx="2" fill="#ffd166"/>
+      <rect x="20" y="46" width="6" height="5" rx="2" fill="#e23b4e"/>
+      <!-- Wheels -->
+      <g transform="translate(58, 62)">
+        <circle r="12" fill="#1a1a1a"/>
+        <circle r="7" fill="url(#rim)"/>
+        <g style="transform-origin: center; animation: spin 1s linear infinite;">
+          <rect x="-1" y="-7" width="2" height="14" fill="#333"/>
+          <rect x="-7" y="-1" width="14" height="2" fill="#333"/>
+        </g>
+      </g>
+      <g transform="translate(170, 62)">
+        <circle r="12" fill="#1a1a1a"/>
+        <circle r="7" fill="url(#rim)"/>
+        <g style="transform-origin: center; animation: spin 1s linear infinite;">
+          <rect x="-1" y="-7" width="2" height="14" fill="#333"/>
+          <rect x="-7" y="-1" width="14" height="2" fill="#333"/>
+        </g>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<section style="max-width: 1100px; margin: 0 auto; padding: 60px 24px;" class="reveal">
+  <div class="section-title">
+    <h2>Why rent with us</h2>
+    <p>Everything you want, nothing you don't.</p>
+  </div>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="ic">
+        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2 L4 14 h8 l-1 8 l9-12 h-8 z"/></svg>
+      </div>
+      <h3>Live availability</h3>
+      <p class="muted">Real-time inventory across every branch. Overbooking is impossible — our database enforces it.</p>
+    </div>
+    <div class="feature-card">
+      <div class="ic">
+        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10 h20"/></svg>
+      </div>
+      <h3>Transparent pricing</h3>
+      <p class="muted">Daily rates, deposit, tax — all shown before you pay. No last-minute surprises.</p>
+    </div>
+    <div class="feature-card">
+      <div class="ic">
+        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7 h16 M4 12 h16 M4 17 h10"/><path d="M18 15 l3 3 l-3 3"/></svg>
+      </div>
+      <h3>Sign in your browser</h3>
+      <p class="muted">E-sign the rental agreement from your phone. No printers, no faxes, nothing to carry.</p>
+    </div>
+    <div class="feature-card">
+      <div class="ic">
+        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2 L4 6 v6 c0 5 3.5 9 8 10 c4.5 -1 8 -5 8 -10 V6 z"/></svg>
+      </div>
+      <h3>Secure payments</h3>
+      <p class="muted">Deposits held by verified gateways. We never see your card number.</p>
+    </div>
+  </div>
+</section>
+
+<section style="background: var(--surface-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 60px 24px;" class="reveal">
+  <div style="max-width: 1100px; margin: 0 auto;">
+    <div class="section-title"><h2>How it works</h2><p>Three steps to the keys.</p></div>
+    <div class="steps">
+      <div class="step card">
+        <h4>Pick dates &amp; a car</h4>
+        <p>Enter your pickup and return times. See every available vehicle, filtered by what matters to you.</p>
+      </div>
+      <div class="step card">
+        <h4>Enter your details</h4>
+        <p>Driver license, insurance choice (or decline), add-ons. We quote the full price up-front, tax included.</p>
+      </div>
+      <div class="step card">
+        <h4>Collect the keys</h4>
+        <p>Show up, we verify your license, snap a few photos, you drive. Return it on time and you're done.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="reveal">
+  <div class="testimonial">
+    <blockquote>"Honestly the fastest car rental I've ever done. Booked at the airport parking lot and had keys in my hand in 20 minutes. The photo-upload link for the return was genius — no arguments about scratches."</blockquote>
+    <cite>— Priya N., rented a Mazda CX-5 for a weekend trip</cite>
+  </div>
+</section>
+
+<section style="background: var(--surface-2); border-top: 1px solid var(--border); padding: 60px 24px; text-align: center;" class="reveal">
+  <h2 style="margin-bottom: 10px;">Have a booking?</h2>
+  <p class="muted" style="margin-bottom: 24px;">Check status, download your agreement, or extend your rental.</p>
+  <a href="/portal" class="btn secondary">Manage my booking</a>
+</section>
+{{end}}

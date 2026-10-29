@@ -1,0 +1,198 @@
+{{define "content"}}
+<div class="flex-between" style="margin-bottom: 16px;">
+  <div>
+    <h2 style="margin: 0;">{{ .V.Year }} {{ .V.Make }} {{ .V.Model }}</h2>
+    <div class="muted" style="font-size: 13px;">
+      {{ if .V.LicensePlate }}Plate <strong>{{ .V.LicensePlate }}</strong> &middot; {{ end }}
+      {{ if .V.FleetNumber }}Fleet #{{ .V.FleetNumber }} &middot; {{ end }}
+      Status: <span class="badge {{ if eq .V.Status "available" }}ok{{ else }}warn{{ end }}">{{ .V.Status }}</span>
+    </div>
+  </div>
+  <a href="/admin/vehicles" class="btn secondary small">← Back to fleet</a>
+</div>
+
+{{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
+{{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+
+<div class="row">
+  <!-- LEFT: Photo gallery + specs -->
+  <div>
+    <div class="card">
+      <div class="flex-between" style="margin-bottom: 12px;">
+        <h3 style="margin: 0;">Photos ({{ len .Photos }})</h3>
+        <small class="muted">Customers see the primary photo in search results.</small>
+      </div>
+
+      {{ if .Photos }}
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px;">
+        {{ range .Photos }}
+        <div class="card" style="padding: 8px; {{ if .IsPrimary }}border-color: var(--accent); background: var(--accent-soft);{{ end }}">
+          <img src="{{ .URL }}" alt="{{ or .Caption "" }}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; display: block;">
+          <div class="muted" style="font-size: 11px; margin-top: 6px;">
+            {{ if .Kind }}<strong>{{ .Kind }}</strong>{{ end }}
+            {{ if .IsPrimary }} &middot; <span class="badge dark" style="font-size: 10px;">primary</span>{{ end }}
+          </div>
+          {{ if .Caption }}<div style="font-size: 12px;">{{ .Caption }}</div>{{ end }}
+          <div class="flex" style="gap: 4px; margin-top: 8px;">
+            {{ if not .IsPrimary }}
+              <form method="post" action="/admin/vehicles/{{ $.V.ID }}/photos/{{ .ID }}/primary" style="flex:1;">
+                <button class="secondary" style="padding: 4px 8px; font-size: 11px; width: 100%;">Make primary</button>
+              </form>
+            {{ end }}
+            <form method="post" action="/admin/vehicles/{{ $.V.ID }}/photos/{{ .ID }}/delete" onsubmit="return confirm('Delete this photo?');" style="flex:1;">
+              <button class="ghost" style="padding: 4px 8px; font-size: 11px; width: 100%; color: var(--danger);">Delete</button>
+            </form>
+          </div>
+        </div>
+        {{ end }}
+      </div>
+      {{ else }}
+      <div style="padding: 40px; text-align: center; border: 2px dashed var(--border); border-radius: 12px;">
+        <div style="font-size: 42px;">📷</div>
+        <p class="muted" style="margin: 8px 0 0;">No photos yet. Customers see a placeholder until you upload one.</p>
+      </div>
+      {{ end }}
+    </div>
+
+    <a id="rates"></a>
+    <div class="card" style="margin-top: 16px;">
+      <div class="flex-between" style="margin-bottom: 10px;">
+        <h3 style="margin: 0;">Rate periods</h3>
+        <small class="muted">Season / holiday pricing. Default daily rate is used when no period matches.</small>
+      </div>
+      <p class="muted" style="font-size: 13px; margin-top: 0;">
+        Default daily rate: <strong>${{ dollars .V.DailyRateCents }}</strong>
+        &middot; Tax: <strong>{{ .Tax.RatePct }}%</strong> ({{ .Tax.Label }}, {{ if .Tax.Inclusive }}inclusive{{ else }}exclusive{{ end }})
+      </p>
+
+      {{ if .Periods }}
+      <table>
+        <thead><tr><th>From</th><th>To</th><th>Label</th><th>Rate / day</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {{ range .Periods }}
+          <tr>
+            <td>{{ .StartsOn.Format "2006-01-02" }}</td>
+            <td>{{ .EndsOn.Format "2006-01-02" }}</td>
+            <td class="muted">{{ or .Label "—" }}</td>
+            <td><strong>${{ dollars .DailyRateCents }}</strong></td>
+            <td>{{ if .IsActive }}<span class="badge ok">active</span>{{ else }}<span class="badge warn">off</span>{{ end }}</td>
+            <td>
+              <form method="post" action="/admin/vehicles/{{ $.V.ID }}/rate-periods/{{ .ID }}/delete" onsubmit="return confirm('Delete this rate period?');" style="display:inline;">
+                <button class="ghost small" style="color: var(--danger);">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {{ end }}
+        </tbody>
+      </table>
+      {{ else }}
+      <p class="muted" style="font-size: 13px;">No rate periods yet. Bookings use the vehicle's default daily rate.</p>
+      {{ end }}
+
+      <form method="post" action="/admin/vehicles/{{ .V.ID }}/rate-periods" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
+        <h4 style="margin: 0 0 8px;">Add a rate period</h4>
+        <div class="row" style="grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px;">
+          <div><label>From</label><input type="date" name="startsOn" required></div>
+          <div><label>To</label><input type="date" name="endsOn" required></div>
+          <div><label>Daily rate (cents)</label><input type="number" name="dailyRateCents" value="{{ .V.DailyRateCents }}" min="1" required></div>
+          <div><label>Label</label><input name="label" placeholder="Summer peak"></div>
+        </div>
+        <button type="submit" style="margin-top: 10px;">Add period</button>
+      </form>
+    </div>
+
+    <a id="features"></a>
+    <form method="post" action="/admin/vehicles/{{ .V.ID }}/features" class="card" style="margin-top: 16px;">
+      <div class="flex-between" style="margin-bottom: 10px;">
+        <h3 style="margin: 0;">Features &amp; add-ons</h3>
+        <small class="muted">What's included on this vehicle, and which optional extras customers can pick during booking.</small>
+      </div>
+
+      <h4 style="font-size: 13px; margin: 10px 0 4px;">Features</h4>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px;">
+        {{ $feat := .FeatureSet }}
+        {{ range .FeatureList }}
+        <label class="card" style="padding: 8px 12px; display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer; font-size: 13px; {{ if index $feat .Key }}border-color: var(--accent); background: var(--accent-soft);{{ end }}">
+          <input type="checkbox" name="feature" value="{{ .Key }}" {{ if index $feat .Key }}checked{{ end }} style="width: auto;"> {{ .Label }}
+        </label>
+        {{ end }}
+      </div>
+
+      <h4 style="font-size: 13px; margin: 16px 0 4px;">Available add-ons for this vehicle</h4>
+      <p class="muted" style="font-size: 12px; margin: 0 0 8px;">Leave all unchecked to offer the full catalog.</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;">
+        {{ $en := .EnabledAddons }}
+        {{ range .Addons }}
+        <label class="card" style="padding: 10px 12px; display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer; font-size: 13px; {{ if index $en .Code }}border-color: var(--accent); background: var(--accent-soft);{{ end }}">
+          <input type="checkbox" name="addon" value="{{ .Code }}" {{ if index $en .Code }}checked{{ end }} style="width: auto;">
+          <span><strong>{{ .Name }}</strong><br><span class="muted" style="font-size: 11px;">${{ dollars .PriceCents }}/{{ .PricePer }}</span></span>
+        </label>
+        {{ end }}
+        {{ if not .Addons }}<p class="muted" style="font-size: 13px;">No add-ons configured yet.</p>{{ end }}
+      </div>
+
+      <button style="margin-top: 14px;">Save features &amp; add-ons</button>
+    </form>
+
+    <div class="card" style="margin-top: 16px;">
+      <h3>Specifications</h3>
+      <div class="price-breakdown">
+        <span class="muted">Make / Model</span><span>{{ .V.Make }} {{ .V.Model }}</span>
+        <span class="muted">Year</span><span>{{ .V.Year }}</span>
+        {{ if .V.Trim }}<span class="muted">Trim</span><span>{{ or .V.Trim "—" }}</span>{{ end }}
+        {{ if .V.VIN }}<span class="muted">VIN</span><span style="font-family: monospace;">{{ or .V.VIN "—" }}</span>{{ end }}
+        <span class="muted">Transmission</span><span>{{ or .V.Transmission "—" }}</span>
+        <span class="muted">Fuel</span><span>{{ or .V.FuelType "—" }}</span>
+        <span class="muted">Seats</span><span>{{ or .V.Seats 0 }}</span>
+        <span class="muted">Color</span><span>{{ or .V.ColorExterior "—" }}</span>
+        <span class="muted">Odometer</span><span>{{ or .V.OdometerKm 0 }} km</span>
+        <span class="muted">Daily rate</span><span>${{ dollars .V.DailyRateCents }}</span>
+        <span class="muted">Deposit</span><span>${{ dollars .V.DepositCents }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Upload form -->
+  <aside>
+    <form method="post" action="/admin/vehicles/{{ .V.ID }}/photos" enctype="multipart/form-data" class="card">
+      <h3>Add photo</h3>
+      <p class="muted" style="font-size: 12px; margin-top: 0;">Formats: JPG, PNG, WebP, HEIC. Max 15 MB per file.</p>
+
+      <label>File</label>
+      <input type="file" name="file" accept="image/*" required>
+
+      <label>View</label>
+      <select name="kind">
+        <option value="front">Front exterior</option>
+        <option value="rear">Rear exterior</option>
+        <option value="left">Left side</option>
+        <option value="right">Right side</option>
+        <option value="interior">Interior</option>
+        <option value="dashboard">Dashboard</option>
+        <option value="other">Other</option>
+      </select>
+
+      <label>Caption <span class="muted">(optional)</span></label>
+      <input name="caption" placeholder="e.g. White, 2024 model">
+
+      <label style="display: flex; align-items: center; gap: 8px; margin-top: 12px;">
+        <input type="checkbox" name="primary" style="width: auto;">
+        Make this the primary photo
+      </label>
+
+      <button type="submit" style="margin-top: 14px; width: 100%;">Upload photo</button>
+      <p class="muted" style="font-size: 12px; margin: 10px 0 0;">The primary photo appears in the customer-facing search results and vehicle cards.</p>
+    </form>
+
+    <div class="card" style="margin-top: 16px;">
+      <h3>Where photos appear</h3>
+      <ul style="margin: 0; padding-left: 20px; font-size: 13px;">
+        <li>Public search results <code>/search</code></li>
+        <li>Customer booking page <code>/book</code></li>
+        <li>Communication Center previews</li>
+        <li>Inspection reports (reference images)</li>
+      </ul>
+    </div>
+  </aside>
+</div>
+{{end}}

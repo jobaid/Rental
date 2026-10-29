@@ -1,0 +1,360 @@
+{{define "content"}}
+<style>
+  .rp-wrap { max-width: 1280px; margin: 0 auto; }
+  .rp-head { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:18px; flex-wrap:wrap; }
+  .rp-head .ttl { margin:0; font-size:26px; letter-spacing:.2px; }
+  .rp-head .sub { color:var(--muted); font-size:13px; margin-top:4px; }
+  .rp-head .actions { display:flex; gap:8px; flex-wrap:wrap; }
+
+  .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:18px; }
+  .kpi { background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px 16px; position:relative; overflow:hidden; }
+  .kpi::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--accent); border-top-left-radius:12px; border-bottom-left-radius:12px; }
+  .kpi .lbl { font-size:11px; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; margin-bottom:6px; }
+  .kpi .num { font-size:22px; font-weight:700; letter-spacing:-.4px; color:#0a0a0a; font-variant-numeric:tabular-nums; }
+  .kpi .foot { font-size:11.5px; color:var(--muted); margin-top:4px; }
+  .kpi.ok::before { background:#10b981; }
+  .kpi.warn::before { background:#f59e0b; }
+  .kpi.danger::before { background:#dc2626; }
+  .kpi.info::before { background:#2563eb; }
+
+  .chart-grid { display:grid; grid-template-columns:2fr 1fr; gap:14px; margin-bottom:14px; }
+  .chart-grid.triple { grid-template-columns:1fr 1fr 1fr; }
+  @media (max-width:960px){ .chart-grid, .chart-grid.triple { grid-template-columns:1fr; } }
+
+  .chart-card { background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px 18px; }
+  .chart-card h3 { margin:0 0 2px; font-size:15px; font-weight:700; }
+  .chart-card .hint { color:var(--muted); font-size:12.5px; margin-bottom:12px; }
+  .chart-card canvas { width:100% !important; height:auto !important; max-height:280px; }
+  .chart-card.tall canvas { max-height:360px; }
+
+  .mini-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .mini-table th { text-align:left; font-size:10.5px; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; padding:6px 8px; border-bottom:1px solid var(--border); }
+  .mini-table td { padding:7px 8px; border-bottom:1px solid var(--softline, #f1f3f6); font-variant-numeric:tabular-nums; }
+  .mini-table td.r, .mini-table th.r { text-align:right; }
+  .mini-table td.rank { color:var(--muted); font-family:monospace; width:26px; }
+  .bar-inline { display:inline-block; height:8px; border-radius:2px; background:var(--accent); vertical-align:middle; }
+
+  .print-head { display:none; }
+
+  @media print {
+    @page { size: A4 landscape; margin: 14mm; }
+    body { background:#fff !important; }
+    .admin-layout .sidebar, .admin-layout header, .flash, nav, .no-print, .rp-head .actions { display:none !important; }
+    .admin-layout .main { padding:0 !important; margin:0 !important; }
+    .admin-layout { display:block !important; }
+    .print-head { display:block; margin-bottom:14px; padding-bottom:10px; border-bottom:2px solid #0a0a0a; }
+    .print-head .co { font-size:22px; font-weight:800; }
+    .print-head .sub { font-size:12px; color:#444; }
+    .print-head .meta { float:right; text-align:right; font-size:12px; }
+    .kpi, .chart-card { break-inside: avoid; page-break-inside: avoid; }
+    .chart-grid, .chart-grid.triple { gap:10px; }
+    .kpi::before { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  }
+</style>
+
+<div class="rp-wrap">
+  <!-- Print-only letterhead -->
+  <div class="print-head">
+    <div class="meta">
+      Generated {{ .GeneratedAt }}<br>
+      Report: Operational Overview
+    </div>
+    <div class="co">{{ .CompanyName }}</div>
+    <div class="sub">{{ .BranchName }}{{ if .BranchAddr }} · {{ .BranchAddr }}{{ end }}</div>
+  </div>
+
+  <div class="rp-head no-print">
+    <div>
+      <h2 class="ttl">Reports — 360° Overview</h2>
+      <div class="sub">Generated {{ .GeneratedAt }} · {{ .CompanyName }}</div>
+    </div>
+    <div class="actions">
+      <a href="/admin/reports/print" class="btn secondary" target="_blank">🖨 Print report</a>
+      <a href="/admin/reports.csv" class="btn secondary">⬇ Download CSV</a>
+    </div>
+  </div>
+
+  <!-- =================== KPI TILES =================== -->
+  <div class="kpi-grid">
+    <div class="kpi ok"><div class="lbl">Today's income</div><div class="num">${{ dollars .B.TodayRevenueCents }}</div><div class="foot">Realized today</div></div>
+    <div class="kpi info"><div class="lbl">This month</div><div class="num">${{ dollars .B.MonthRevenueCents }}</div><div class="foot">{{ .B.MonthBookings }} bookings MTD</div></div>
+    <div class="kpi"><div class="lbl">This year</div><div class="num">${{ dollars .B.YearRevenueCents }}</div><div class="foot">YTD gross</div></div>
+    <div class="kpi"><div class="lbl">All-time revenue</div><div class="num">${{ dollars .B.TotalRevenueCents }}</div><div class="foot">{{ .B.TotalBookings }} bookings total</div></div>
+    <div class="kpi warn"><div class="lbl">Outstanding</div><div class="num">${{ dollars .B.OutstandingCents }}</div><div class="foot">Unpaid balance</div></div>
+    <div class="kpi"><div class="lbl">Avg booking value</div><div class="num">${{ dollars .B.AvgBookingCents }}</div><div class="foot">Excl. cancelled</div></div>
+    <div class="kpi info"><div class="lbl">Fleet utilization</div><div class="num">{{ .B.UtilizationPct }}%</div><div class="foot">{{ sub .B.TotalFleet .B.AvailableNow }} of {{ .B.TotalFleet }} on rent</div></div>
+    <div class="kpi"><div class="lbl">Active rentals</div><div class="num">{{ .B.ActiveRentals }}</div><div class="foot">Checked out now</div></div>
+    <div class="kpi ok"><div class="lbl">Customers</div><div class="num">{{ .B.TotalCustomers }}</div><div class="foot">+{{ .B.NewCustomers30 }} in last 30d</div></div>
+    <div class="kpi danger"><div class="lbl">Cancelled</div><div class="num">{{ .B.Cancelled }}</div><div class="foot">All-time</div></div>
+    <div class="kpi"><div class="lbl">Maintenance spend</div><div class="num">${{ dollars .B.MaintenanceCents }}</div><div class="foot">All-time</div></div>
+  </div>
+
+  <!-- =================== DAILY (BAR) + STATUS MIX (PIE) =================== -->
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h3>Daily income — last 30 days</h3>
+      <div class="hint">Payments received per day. Hover for exact amounts.</div>
+      <canvas id="chart-daily"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>Booking status mix</h3>
+      <div class="hint">Share of total reservations by status.</div>
+      <canvas id="chart-status"></canvas>
+    </div>
+  </div>
+
+  <!-- =================== MONTHLY (BAR) + YEARLY (BAR) =================== -->
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h3>Monthly income — last 12 months</h3>
+      <div class="hint">Revenue + bookings per calendar month.</div>
+      <canvas id="chart-monthly"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>Yearly revenue</h3>
+      <div class="hint">Last 5 calendar years.</div>
+      <canvas id="chart-yearly"></canvas>
+    </div>
+  </div>
+
+  <!-- =================== WEEKLY + ANNUAL SEASONALITY =================== -->
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h3>Customers by weekday</h3>
+      <div class="hint">What day of the week does the typical pickup happen? Shows demand concentration.</div>
+      <canvas id="chart-weekday"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>Insurance uptake</h3>
+      <div class="hint">What coverage do customers choose?</div>
+      <canvas id="chart-insurance"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:14px;">
+    <h3>Annual pattern — bookings per month-of-year</h3>
+    <div class="hint">Which months drive the business across all time? Reveals peak season.</div>
+    <canvas id="chart-moy" style="max-height:260px;"></canvas>
+  </div>
+
+  <!-- =================== TOP VEHICLES / CUSTOMERS / BRANCHES =================== -->
+  <div class="chart-grid triple">
+    <div class="chart-card tall">
+      <h3>Most rented vehicles</h3>
+      <div class="hint">Top 10 by booking count. Hover shows revenue contribution.</div>
+      <table class="mini-table">
+        <thead><tr><th class="rank">#</th><th>Vehicle</th><th class="r">Trips</th><th class="r">Revenue</th></tr></thead>
+        <tbody>
+          {{ range $i, $v := .B.TopVehicles }}
+          <tr>
+            <td class="rank">{{ add1 $i }}</td>
+            <td>{{ $v.Label }}</td>
+            <td class="r">{{ $v.Count }}</td>
+            <td class="r">${{ dollars $v.RevenueCents }}</td>
+          </tr>
+          {{ else }}
+          <tr><td colspan="4" class="muted" style="text-align:center;padding:20px;">No rentals yet.</td></tr>
+          {{ end }}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="chart-card tall">
+      <h3>Top customers</h3>
+      <div class="hint">By booking count, lifetime.</div>
+      <table class="mini-table">
+        <thead><tr><th class="rank">#</th><th>Customer</th><th class="r">Bookings</th><th class="r">Spend</th></tr></thead>
+        <tbody>
+          {{ range $i, $c := .B.TopCustomers }}
+          <tr>
+            <td class="rank">{{ add1 $i }}</td>
+            <td>{{ $c.Label }}</td>
+            <td class="r">{{ $c.Count }}</td>
+            <td class="r">${{ dollars $c.RevenueCents }}</td>
+          </tr>
+          {{ else }}
+          <tr><td colspan="4" class="muted" style="text-align:center;padding:20px;">No customers yet.</td></tr>
+          {{ end }}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="chart-card tall">
+      <h3>Revenue by branch</h3>
+      <div class="hint">Top performing pickup locations.</div>
+      <canvas id="chart-branches"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<!-- Chart.js (vendored at /static/js/chart.umd.min.js so this page works offline). -->
+<script src="/static/js/chart.umd.min.js"></script>
+<script>
+(function(){
+  if (typeof Chart === 'undefined') {
+    console.error('Chart.js failed to load — check /static/js/chart.umd.min.js is served');
+    document.querySelectorAll('.chart-card canvas').forEach(c => {
+      c.outerHTML = '<div style="padding:30px;text-align:center;color:#9ca3af;">⚠ Chart library failed to load.</div>';
+    });
+    return;
+  }
+  const DATA = {{ .BJSON }};
+  // Make the data available for debugging in the browser console.
+  window.__reportData = DATA;
+  // Palette — matches the dashboard's teal / warm accent system.
+  const TEAL = '#0f766e';
+  const TEAL_SOFT = 'rgba(15, 118, 110, 0.14)';
+  const PALETTE = ['#0f766e','#2563eb','#d97706','#dc2626','#7c3aed','#059669','#0ea5e9','#f59e0b','#ec4899','#64748b','#14b8a6','#8b5cf6'];
+  const money = v => '$' + (v/100).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+
+  Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  Chart.defaults.font.size = 11.5;
+  Chart.defaults.color = '#4b5563';
+  Chart.defaults.plugins.legend.labels.usePointStyle = true;
+  Chart.defaults.plugins.legend.labels.boxWidth = 10;
+
+  const gridX = { grid: { display:false }, border:{display:false} };
+  const gridY = { grid: { color:'#eef1f5' }, border:{display:false}, ticks:{ callback: v => '$'+(v/100).toFixed(0) }};
+
+  // -------- Daily (bar) --------
+  if (DATA.daily30) {
+    new Chart(document.getElementById('chart-daily'), {
+      type:'bar',
+      data:{
+        labels: DATA.daily30.map(d=>d.label),
+        datasets:[{ label:'Revenue', data: DATA.daily30.map(d=>d.revenueCents), backgroundColor: TEAL, borderRadius:3, maxBarThickness:14 }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:true, aspectRatio: 2.6,
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:ctx=>money(ctx.parsed.y) }}},
+        scales:{ x: gridX, y: gridY }
+      }
+    });
+  }
+
+  // -------- Status mix (pie / doughnut) --------
+  if (DATA.statusMix && DATA.statusMix.length) {
+    new Chart(document.getElementById('chart-status'), {
+      type:'doughnut',
+      data:{
+        labels: DATA.statusMix.map(d=>d.label),
+        datasets:[{ data: DATA.statusMix.map(d=>d.count), backgroundColor: PALETTE, borderWidth:0 }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:true, aspectRatio: 1.5,
+        cutout:'62%',
+        plugins:{ legend:{position:'right'}, tooltip:{ callbacks:{ label:ctx=>` ${ctx.label}: ${ctx.parsed}` }}}
+      }
+    });
+  }
+
+  // -------- Monthly (dual: bar + line) --------
+  if (DATA.monthly12) {
+    new Chart(document.getElementById('chart-monthly'), {
+      type:'bar',
+      data:{
+        labels: DATA.monthly12.map(d=>d.label),
+        datasets:[
+          { label:'Revenue', data: DATA.monthly12.map(d=>d.revenueCents), backgroundColor: TEAL, borderRadius:3, yAxisID:'y' },
+          { label:'Bookings', data: DATA.monthly12.map(d=>d.count), type:'line', borderColor:'#d97706', backgroundColor:'#d97706', tension:.3, yAxisID:'y1', pointRadius:3 }
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:true, aspectRatio: 2.6,
+        plugins:{ legend:{position:'top', align:'end'} },
+        scales:{
+          x: gridX,
+          y: { ...gridY, position:'left' },
+          y1:{ position:'right', grid:{display:false}, border:{display:false}, ticks:{ callback: v => v+' bk'}}
+        }
+      }
+    });
+  }
+
+  // -------- Yearly (bar) --------
+  if (DATA.yearly5) {
+    new Chart(document.getElementById('chart-yearly'), {
+      type:'bar',
+      data:{
+        labels: DATA.yearly5.map(d=>d.label),
+        datasets:[{ label:'Revenue', data: DATA.yearly5.map(d=>d.revenueCents), backgroundColor: PALETTE.slice(0,DATA.yearly5.length), borderRadius:4 }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:true, aspectRatio: 1.6,
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:ctx=>money(ctx.parsed.y) }}},
+        scales:{ x: gridX, y: gridY }
+      }
+    });
+  }
+
+  // -------- Weekday (horizontal bar) --------
+  if (DATA.weekday) {
+    new Chart(document.getElementById('chart-weekday'), {
+      type:'bar',
+      data:{
+        labels: DATA.weekday.map(d=>d.label),
+        datasets:[{ label:'Bookings', data: DATA.weekday.map(d=>d.count), backgroundColor: TEAL, borderRadius:3, maxBarThickness:28 }]
+      },
+      options:{
+        indexAxis:'y', responsive:true, maintainAspectRatio:true, aspectRatio: 1.6,
+        plugins:{ legend:{display:false} },
+        scales:{ x:{ grid:{color:'#eef1f5'}, border:{display:false}}, y: gridX }
+      }
+    });
+  }
+
+  // -------- Insurance uptake (pie) --------
+  if (DATA.insuranceMix && DATA.insuranceMix.length) {
+    new Chart(document.getElementById('chart-insurance'), {
+      type:'pie',
+      data:{
+        labels: DATA.insuranceMix.map(d=>d.label),
+        datasets:[{ data: DATA.insuranceMix.map(d=>d.count), backgroundColor: PALETTE, borderWidth:0 }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:true, aspectRatio: 1.5,
+        plugins:{ legend:{position:'right'} }
+      }
+    });
+  }
+
+  // -------- Month-of-year (bar) --------
+  if (DATA.monthOfYear) {
+    new Chart(document.getElementById('chart-moy'), {
+      type:'bar',
+      data:{
+        labels: DATA.monthOfYear.map(d=>d.label),
+        datasets:[{ label:'Bookings', data: DATA.monthOfYear.map(d=>d.count), backgroundColor: '#2563eb', borderRadius:3, maxBarThickness:34 }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:true, aspectRatio: 4.0,
+        plugins:{ legend:{display:false} },
+        scales:{ x: gridX, y:{ grid:{color:'#eef1f5'}, border:{display:false}, ticks:{ precision:0 }}}
+      }
+    });
+  }
+
+  // -------- Branches (horizontal bar, revenue) --------
+  if (DATA.branchRevenue && DATA.branchRevenue.length) {
+    new Chart(document.getElementById('chart-branches'), {
+      type:'bar',
+      data:{
+        labels: DATA.branchRevenue.map(d=>d.label),
+        datasets:[{ label:'Revenue', data: DATA.branchRevenue.map(d=>d.revenueCents), backgroundColor:'#0ea5e9', borderRadius:3 }]
+      },
+      options:{
+        indexAxis:'y', responsive:true, maintainAspectRatio:true, aspectRatio: 1.2,
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx => money(ctx.parsed.x) }}},
+        scales:{ x:{ grid:{color:'#eef1f5'}, border:{display:false}, ticks:{ callback: v => '$'+(v/100).toFixed(0)}}, y: gridX }
+      }
+    });
+  }
+
+  {{ if .Print }}
+  // Give the charts a tick to render before the print dialog opens.
+  setTimeout(() => window.print(), 500);
+  {{ end }}
+})();
+</script>
+{{end}}

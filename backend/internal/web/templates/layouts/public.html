@@ -1,0 +1,69 @@
+{{define "header"}}
+<header class="site-header">
+  <a href="/" class="logo">mosrental</a>
+  <nav class="site-nav">
+    <a href="/">Home</a>
+    <a href="/search">Browse cars</a>
+    <a href="/about">About</a>
+    <a href="/faq">FAQ</a>
+    <a href="/contact">Contact</a>
+    <a href="/portal">My booking</a>
+    {{ if .Session }}
+      {{ if eq .Session.Role "customer" }}<a href="/portal" class="btn secondary small">Account</a>
+      {{ else }}<a href="/admin" class="btn small">Dashboard</a>{{ end }}
+    {{ else }}
+      <a href="/admin/login" class="btn small">Staff sign in</a>
+    {{ end }}
+  </nav>
+</header>
+{{end}}
+
+{{define "footer"}}
+<footer class="site-footer" style="padding: 48px 24px 32px; text-align: left;">
+  <div style="max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px;">
+    <div>
+      <div style="font-weight: 800; font-size: 20px; letter-spacing: -0.03em; color: var(--text);">mosrental</div>
+      <p style="margin: 10px 0 0; color: var(--muted); font-size: 13px; max-width: 300px;">
+        Modern car rental. Pick a date, pick a car, drive. We handle the paperwork.
+      </p>
+    </div>
+    <div>
+      <h4 style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 10px;">Explore</h4>
+      <div style="display: grid; gap: 6px; font-size: 13px;">
+        <a href="/search">Browse cars</a>
+        <a href="/portal">My booking</a>
+        <a href="/about">About</a>
+      </div>
+    </div>
+    <div>
+      <h4 style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 10px;">Support</h4>
+      <div style="display: grid; gap: 6px; font-size: 13px;">
+        <a href="/faq">FAQ</a>
+        <a href="/contact">Contact us</a>
+      </div>
+    </div>
+    <div>
+      <h4 style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 10px;">Legal</h4>
+      <div style="display: grid; gap: 6px; font-size: 13px;">
+        <a href="/terms">Terms &amp; conditions</a>
+        <a href="/legal">Legal / Privacy</a>
+      </div>
+    </div>
+  </div>
+  <div style="max-width: 1100px; margin: 32px auto 0; padding-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--muted); flex-wrap: wrap; gap: 10px;">
+    <div>© 2026 mosrental. All rights reserved.</div>
+    <div>Made with ♥ for happy renters.</div>
+  </div>
+</footer>
+<script>
+  // Reveal-on-scroll
+  (function(){
+    var els = document.querySelectorAll('.reveal');
+    if (!('IntersectionObserver' in window)) { els.forEach(function(e){ e.classList.add('in'); }); return; }
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
+    }, { threshold: 0.1 });
+    els.forEach(function(e){ io.observe(e); });
+  })();
+</script>
+{{end}}

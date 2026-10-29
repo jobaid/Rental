@@ -1,0 +1,76 @@
+{{define "header"}}
+<div class="admin-top">
+  <a href="/admin" class="brand">
+    <span class="dot"></span>
+    <span>mosrental</span>
+  </a>
+  <form class="search" action="/admin/reservations" method="get" role="search">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="search" name="q" placeholder="Search bookings by number, customer, plate…" aria-label="Search">
+  </form>
+  <div class="user">
+    {{ if .Session }}
+      <a href="/admin/settings">Settings</a>
+      <div class="avatar" title="{{ .Session.Name }}">{{ initials2 .Session.Name }}</div>
+      <a href="/admin/logout">Sign out</a>
+    {{ end }}
+  </div>
+</div>
+<div class="admin-shell">
+  <aside class="admin-side">
+    <h4>Operations</h4>
+    <a href="/admin" class="{{ if eq .Active "dashboard" }}active{{ end }}">
+      {{ sideIcon "dashboard" }}<span>Dashboard</span>
+    </a>
+    <a href="/admin/active" class="{{ if eq .Active "active" }}active{{ end }}">
+      {{ sideIcon "people" }}<span>Who's got what</span>
+    </a>
+    <a href="/admin/calendar" class="{{ if eq .Active "calendar" }}active{{ end }}">
+      {{ sideIcon "calendar" }}<span>Calendar</span>
+    </a>
+
+    <h4>Car Rental</h4>
+    <a href="/admin/reservations" class="{{ if eq .Active "reservations" }}active{{ end }}">
+      {{ sideIcon "clipboard" }}<span>Reservations</span>
+    </a>
+    <a href="/admin/communications" class="{{ if eq .Active "comms" }}active{{ end }}">
+      {{ sideIcon "chat" }}<span>Communication Center</span>
+    </a>
+    <a href="/admin/reservations?tab=quotes" class="{{ if eq .Active "quotes" }}active{{ end }}">
+      {{ sideIcon "doc" }}<span>Quotes</span>
+    </a>
+
+    <h4>Fleet</h4>
+    <a href="/admin/vehicles" class="{{ if eq .Active "vehicles" }}active{{ end }}">
+      {{ sideIcon "car" }}<span>Vehicles</span>
+    </a>
+    <a href="/admin/maintenance" class="{{ if eq .Active "maintenance" }}active{{ end }}">
+      {{ sideIcon "wrench" }}<span>Maintenance</span>
+    </a>
+
+    <h4>People</h4>
+    <a href="/admin/customers" class="{{ if eq .Active "customers" }}active{{ end }}">
+      {{ sideIcon "user" }}<span>Customers</span>
+    </a>
+    <a href="/admin/licenses" class="{{ if eq .Active "licenses" }}active{{ end }}">
+      {{ sideIcon "id" }}<span>License review</span>
+    </a>
+    <a href="/admin/users" class="{{ if eq .Active "users" }}active{{ end }}">
+      {{ sideIcon "people" }}<span>Users &amp; access</span>
+    </a>
+
+    <h4>Business</h4>
+    <a href="/admin/reports" class="{{ if eq .Active "reports" }}active{{ end }}">
+      {{ sideIcon "chart" }}<span>Reports</span>
+    </a>
+    <a href="/admin/settings" class="{{ if eq .Active "settings" }}active{{ end }}">
+      {{ sideIcon "gear" }}<span>Settings</span>
+    </a>
+  </aside>
+  <main class="admin-main">
+{{end}}
+
+{{define "footer"}}
+  </main>
+</div>
+{{end}}

@@ -49,7 +49,8 @@ func (d *Deps) Login(w http.ResponseWriter, r *http.Request) {
 		isActive  bool
 	)
 
-	// If a company slug is given, scope the lookup; else try platform owner first, then any company user by email.
+	// Single-company app: resolve by email alone. Platform owners (company_id IS NULL) are preferred
+	// if their email also exists on a tenant user, but normally they don't collide.
 	if req.CompanySlug != "" {
 		err := d.DB.Pool.QueryRow(ctx, `
 			SELECT u.id, u.company_id, u.password_hash, u.role, u.name, u.is_active
@@ -63,7 +64,9 @@ func (d *Deps) Login(w http.ResponseWriter, r *http.Request) {
 	} else {
 		err := d.DB.Pool.QueryRow(ctx, `
 			SELECT id, company_id, password_hash, role, name, is_active
-			FROM users WHERE email = $1 AND company_id IS NULL
+			FROM users WHERE email = $1
+			ORDER BY (company_id IS NULL) DESC
+			LIMIT 1
 		`, req.Email).Scan(&id, &companyID, &hash, &role, &name, &isActive)
 		if errors.Is(err, pgx.ErrNoRows) {
 			writeErr(w, http.StatusUnauthorized, "invalid credentials")

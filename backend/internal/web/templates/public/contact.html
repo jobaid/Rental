@@ -1,0 +1,78 @@
+{{define "content"}}
+<section class="page-hero">
+  <h1>Get in touch</h1>
+  <p>Questions, complaints, compliments — all welcome.</p>
+</section>
+
+<section style="max-width: 1000px; margin: 0 auto; padding: 48px 24px;">
+  {{ if .Submitted }}
+  <div class="card" style="text-align: center; padding: 60px; max-width: 600px; margin: 0 auto;">
+    <div style="width: 70px; height: 70px; border-radius: 999px; background: var(--success-soft); color: var(--success); display: grid; place-items: center; margin: 0 auto 20px; font-size: 32px;">✓</div>
+    <h2>Thanks, we got it.</h2>
+    <p class="muted">We read every message and get back within one business day.</p>
+    <a href="/" class="btn secondary" style="margin-top: 16px;">Back to home</a>
+  </div>
+  {{ else }}
+  <div class="row" style="grid-template-columns: 1.2fr 1fr; gap: 30px;">
+    <form method="post" action="/contact" class="card reveal">
+      <h3>Send us a message</h3>
+      <div class="row" style="grid-template-columns: 1fr 1fr;">
+        <div><label>Your name</label><input name="name" required></div>
+        <div><label>Email</label><input type="email" name="email" required></div>
+      </div>
+      <label>Subject</label>
+      <select name="subject">
+        <option value="general">General question</option>
+        <option value="booking">Booking question</option>
+        <option value="billing">Billing / refund</option>
+        <option value="damage">Damage / incident</option>
+        <option value="partnership">Partnership</option>
+      </select>
+      <label>Booking number <span class="muted">(if applicable)</span></label>
+      <input name="bookingNumber" placeholder="BK-123456">
+      <label>Message</label>
+      <textarea name="message" rows="6" required placeholder="Tell us what's going on…"></textarea>
+      {{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+      <button style="margin-top: 14px;">Send message</button>
+    </form>
+
+    <div class="card reveal" style="background: linear-gradient(135deg, #0b1f26, #0f3d3e); color: #d7e3e4; border-color: transparent;">
+      <h3 style="color: #fff;">Other ways to reach us</h3>
+
+      <div style="display: flex; gap: 12px; align-items: start; margin: 18px 0;">
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.1); display: grid; place-items: center;">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92V21a1 1 0 0 1-1 1C10 22 2 14 2 3a1 1 0 0 1 1-1h4.09a1 1 0 0 1 1 .75l1.5 4a1 1 0 0 1-.3 1l-2.3 2.3a16 16 0 0 0 6 6l2.3-2.3a1 1 0 0 1 1-.3l4 1.5a1 1 0 0 1 .75 1z"/></svg>
+        </div>
+        <div>
+          <div style="font-weight: 600; color: #fff;">Phone</div>
+          <div style="color: rgba(215,227,228,0.75); font-size: 13px;">Mon–Sat 8:00–20:00</div>
+          <div style="margin-top: 4px;">+1 (555) 010-7777</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 12px; align-items: start; margin: 18px 0;">
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.1); display: grid; place-items: center;">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7 l10 7 l10 -7"/></svg>
+        </div>
+        <div>
+          <div style="font-weight: 600; color: #fff;">Email</div>
+          <div style="color: rgba(215,227,228,0.75); font-size: 13px;">We reply within 1 business day</div>
+          <div style="margin-top: 4px;">hello@mosrental.example</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 12px; align-items: start; margin: 18px 0;">
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.1); display: grid; place-items: center;">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7 -9 13 -9 13 S3 17 3 10 a9 9 0 0 1 18 0 z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <div>
+          <div style="font-weight: 600; color: #fff;">Head office</div>
+          <div style="color: rgba(215,227,228,0.75); font-size: 13px;">By appointment only</div>
+          <div style="margin-top: 4px;">42 Rental Lane, Suite 100</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {{ end }}
+</section>
+{{end}}

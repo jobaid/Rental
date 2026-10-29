@@ -6,11 +6,14 @@ import (
 
 	"github.com/rentalsoftware/backend/internal/auth"
 	"github.com/rentalsoftware/backend/internal/db"
+	"github.com/rentalsoftware/backend/internal/storage"
 )
 
 type Deps struct {
-	DB     *db.DB
-	Signer *auth.Signer
+	DB         *db.DB
+	Signer     *auth.Signer
+	Store      *storage.Store
+	PublicBase string
 }
 
 func writeJSON(w http.ResponseWriter, code int, v any) {

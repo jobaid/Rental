@@ -4,6 +4,14 @@
 *.pem
 *.key
 
+# Dev tool state (per-developer, do not commit)
+.claude/
+.engram/
+.graphify/
+
+# Archived legacy React frontend (kept locally, not committed)
+frontend-react-archive/
+
 # Backend
 backend/bin/
 backend/tmp/
@@ -27,3 +35,7 @@ Thumbs.db
 
 # Postgres volume
 pgdata/
+
+# Uploaded files (dev local store)
+backend/storage/
+storage/

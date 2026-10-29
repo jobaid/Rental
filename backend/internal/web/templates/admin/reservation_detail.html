@@ -1,0 +1,175 @@
+{{define "content"}}
+<div class="flex-between" style="margin-bottom: 16px;">
+  <h2 style="margin:0;">Booking {{ .R.BookingNumber }} <span class="badge {{ statusClass .R.Status }}">{{ .R.Status }}</span></h2>
+  <div class="flex">
+    <a href="/admin/reservations/{{ .R.ID }}/agreement.pdf" class="btn secondary" target="_blank">Agreement PDF</a>
+    <a href="/admin/reservations/{{ .R.ID }}/invoice.pdf" class="btn secondary" target="_blank">Invoice PDF</a>
+    <form method="post" action="/admin/reservations/{{ .R.ID }}/photo-link" style="display:inline;">
+      <button class="secondary">Email photo link</button>
+    </form>
+    <form method="post" action="/admin/reservations/{{ .R.ID }}/fleet-link" style="display:inline;">
+      <button class="secondary">🔧 Fleet prep link</button>
+    </form>
+    <form method="post" action="/admin/reservations/{{ .R.ID }}/open-thread" style="display:inline;">
+      <button class="secondary">💬 Message customer</button>
+    </form>
+    <a href="/admin/reservations" class="btn ghost">Back</a>
+  </div>
+</div>
+
+{{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
+{{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+{{ if .PhotoLink }}
+<div class="card" style="background: var(--accent-soft); border-color: var(--accent); margin-bottom: 20px;">
+  <strong>Photo-upload link ready.</strong> Share this with the customer (email was queued):
+  <div style="font-family: monospace; margin-top: 6px; word-break: break-all;">{{ .PhotoLink }}</div>
+</div>
+{{ end }}
+
+<div class="row">
+  <div class="card">
+    <h3>Details</h3>
+    <div class="price-breakdown">
+      <span class="muted">Customer</span><span>{{ or .R.CustomerName "—" }}</span>
+      <span class="muted">Vehicle</span><span>{{ or .R.VehicleLabel "—" }}</span>
+      <span class="muted">Pickup</span><span>{{ fmtTime .R.PickupAt }}</span>
+      <span class="muted">Return</span><span>{{ fmtTime .R.ReturnAt }}</span>
+      <span class="muted">Rate</span><span>${{ dollars .R.DailyRateCents }} &times; {{ .R.RentalDays }} day(s)</span>
+      <span class="muted">Subtotal</span><span>${{ dollars .R.SubtotalCents }}</span>
+      <span class="muted">Extras</span><span>${{ dollars .R.ExtrasCents }}</span>
+      <span class="muted">Tax</span><span>${{ dollars .R.TaxCents }}</span>
+      <div class="total"><span>Total</span><span>${{ dollars .R.TotalCents }}</span></div>
+      <span class="muted">Paid</span><span>${{ dollars .R.PaidCents }}</span>
+      <span class="muted">Balance</span><span><strong>${{ dollars (sub .R.TotalCents .R.PaidCents) }}</strong></span>
+    </div>
+  </div>
+
+  <div class="card" id="actions">
+    <h3>Actions</h3>
+    {{ if eq .R.Status "pending" }}
+    <form method="post" action="/admin/reservations/{{ .R.ID }}/status">
+      <input type="hidden" name="status" value="confirmed">
+      <button style="width:100%;">Confirm booking</button>
+    </form>
+    <hr>
+    {{ end }}
+
+    <h3 id="checkout" style="font-size:14px; margin-top: 10px;">Check out (pickup)</h3>
+    <form method="post" action="/admin/reservations/{{ .R.ID }}/checkout">
+      <label>Odometer (km) — required</label>
+      <input type="number" name="odometerKm" required min="1">
+      <label>Fuel level (%) — required</label>
+      <input type="number" name="fuelPct" min="0" max="100" value="100">
+      <label>Note</label>
+      <input name="note" placeholder="e.g. small scratch on rear bumper">
+      <button style="margin-top: 10px; width: 100%;">Check out vehicle</button>
+    </form>
+
+    <hr>
+
+    <h3 id="checkin" style="font-size:14px;">Check in (return)</h3>
+    <form method="post" action="/admin/reservations/{{ .R.ID }}/checkin">
+      <label>Odometer (km) — required</label>
+      <input type="number" name="odometerKm" required min="1">
+      <label>Fuel level (%) — required</label>
+      <input type="number" name="fuelPct" min="0" max="100" value="100">
+      <label>Note</label>
+      <input name="note">
+      <button class="secondary" style="margin-top: 10px; width: 100%;">Check in vehicle</button>
+    </form>
+  </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+  <h3 style="margin-top:0;">Invoices</h3>
+  <p class="muted" style="font-size:13px;margin-top:0;">A <strong>pre-rental invoice</strong> is drafted when a booking is created. A <strong>final invoice</strong> is drafted when the vehicle is checked in. Open either one to edit line items, change the tax, add notes, update the insurance Terms &amp; Conditions, and email it to the customer.</p>
+  <table>
+    <thead><tr><th>Kind</th><th>Number</th><th>Status</th><th>Total</th><th>Issued</th><th>Sent</th><th></th></tr></thead>
+    <tbody>
+    {{ range .Invoices }}
+      <tr>
+        <td>{{ if eq .Kind "pre" }}Pre-rental{{ else }}Final{{ end }}</td>
+        <td style="font-family:monospace;">{{ .Number }}</td>
+        <td><span class="badge {{ if eq .Status "paid" }}ok{{ else if eq .Status "void" }}danger{{ else if eq .Status "sent" }}warn{{ end }}">{{ .Status }}</span></td>
+        <td>${{ dollars .TotalCents }}</td>
+        <td class="muted">{{ if .IssuedAt }}{{ fmtDay .IssuedAt.Local }}{{ else }}—{{ end }}</td>
+        <td class="muted">{{ if .SentAt }}{{ fmtDay .SentAt.Local }}{{ else }}—{{ end }}</td>
+        <td><a class="btn secondary" href="/admin/invoices/{{ .ID }}">Open</a></td>
+      </tr>
+    {{ else }}
+      <tr><td colspan="7" class="muted" style="text-align:center;padding:20px;">No invoices yet.</td></tr>
+    {{ end }}
+    </tbody>
+  </table>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+  <h3>Record payment</h3>
+  <form method="post" action="/admin/reservations/{{ .R.ID }}/payment" class="flex" style="gap: 10px;">
+    <input type="number" name="amountCents" required placeholder="Amount in cents" style="flex:1;">
+    <select name="method" style="width: 140px;">
+      <option value="cash">Cash</option>
+      <option value="card">Card</option>
+      <option value="bank">Bank</option>
+      <option value="manual">Manual</option>
+    </select>
+    <input name="reference" placeholder="Reference" style="flex:1;">
+    <button>Record payment</button>
+  </form>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+  <h3 style="margin-top:0;">Fleet inspection report</h3>
+  <p class="muted" style="font-size:13px; margin-top:0;">What the fleet prep team captured when they walked around the car. Generate a <strong>Fleet prep link</strong> above and share it with the branch — their photos, odometer / fuel readings and damage notes flow straight into this report.</p>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+    {{ template "inspBlock" (dict "label" "Pre-rental" "ins" .Pre) }}
+    {{ template "inspBlock" (dict "label" "Post-rental" "ins" .Post) }}
+  </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+  <h3>Status history</h3>
+  <table>
+    <thead><tr><th>When</th><th>From</th><th>To</th></tr></thead>
+    <tbody>
+      {{ range .History }}<tr><td class="muted">{{ fmtTime .CreatedAt }}</td><td>{{ or .FromStatus "—" }}</td><td><span class="badge {{ statusClass .ToStatus }}">{{ .ToStatus }}</span></td></tr>{{ end }}
+    </tbody>
+  </table>
+</div>
+{{end}}
+
+{{define "inspBlock"}}
+<div style="border:1px solid var(--border); border-radius:10px; padding:14px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+    <strong>{{ .label }}</strong>
+    {{ if .ins }}<span class="muted" style="font-size:12px;">{{ .ins.PhotoCount }} photo(s)</span>{{ else }}<span class="muted" style="font-size:12px;">Not yet started</span>{{ end }}
+  </div>
+  {{ if .ins }}
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px 12px; font-size:13px; margin-bottom:10px;">
+    <span class="muted">Odometer</span><span>{{ if .ins.OdometerKm }}{{ .ins.OdometerKm }} km{{ else }}—{{ end }}</span>
+    <span class="muted">Fuel</span><span>{{ if .ins.FuelPct }}{{ .ins.FuelPct }}%{{ else }}—{{ end }}</span>
+  </div>
+  {{ if .ins.DamageNotes }}
+  <div style="padding:10px 12px; background:#fef2f2; border-left:3px solid #dc2626; border-radius:6px; font-size:13px; color:#7f1d1d; white-space:pre-wrap; margin-bottom:10px;">
+    <strong style="display:block; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px;">Damage notes</strong>
+    {{ .ins.DamageNotes }}
+  </div>
+  {{ end }}
+  {{ if .ins.Photos }}
+  <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(80px, 1fr)); gap:6px;">
+    {{ range .ins.Photos }}
+    <a href="/uploads/{{ .FilePath }}" target="_blank" style="display:block; aspect-ratio:1/1; border-radius:6px; overflow:hidden; border:1px solid var(--border); position:relative;">
+      <img src="/uploads/{{ .FilePath }}" alt="{{ .Slot }}" style="width:100%; height:100%; object-fit:cover;">
+      <span style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,.65); color:#fff; font-size:10px; padding:2px 4px; text-align:center; letter-spacing:.5px; text-transform:uppercase;">{{ .Slot }}</span>
+    </a>
+    {{ end }}
+  </div>
+  {{ else }}
+  <div class="muted" style="font-size:12px; padding:12px; text-align:center; background:#f8fafc; border-radius:6px;">No photos yet.</div>
+  {{ end }}
+  {{ else }}
+  <div class="muted" style="font-size:12px; padding:16px; text-align:center; background:#f8fafc; border-radius:6px;">Waiting for fleet staff to submit this inspection.</div>
+  {{ end }}
+</div>
+{{end}}

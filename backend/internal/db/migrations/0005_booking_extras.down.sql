@@ -1,0 +1,12 @@
+ALTER TABLE reservations DROP COLUMN IF EXISTS insurance_code;
+ALTER TABLE reservations DROP COLUMN IF EXISTS insurance_total_cents;
+ALTER TABLE reservations DROP COLUMN IF EXISTS checkin_odometer_km;
+ALTER TABLE reservations DROP COLUMN IF EXISTS checkin_fuel_pct;
+ALTER TABLE reservations DROP COLUMN IF EXISTS checkin_at;
+ALTER TABLE reservations DROP COLUMN IF EXISTS checkout_odometer_km;
+ALTER TABLE reservations DROP COLUMN IF EXISTS checkout_fuel_pct;
+ALTER TABLE reservations DROP COLUMN IF EXISTS checkout_at;
+DROP TABLE IF EXISTS license_verifications;
+DROP TABLE IF EXISTS insurance_catalog;
+DROP TABLE IF EXISTS addon_catalog;
+DROP TABLE IF EXISTS photo_upload_tokens;

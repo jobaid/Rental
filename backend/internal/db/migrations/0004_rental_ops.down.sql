@@ -1,0 +1,16 @@
+DROP TRIGGER IF EXISTS reservations_status_log_trg ON reservations;
+DROP FUNCTION IF EXISTS reservations_status_log();
+DROP TABLE IF EXISTS backup_runs;
+DROP TABLE IF EXISTS support_messages;
+DROP TABLE IF EXISTS support_tickets;
+DROP TABLE IF EXISTS promo_codes;
+DROP TABLE IF EXISTS custom_field_values;
+DROP TABLE IF EXISTS custom_fields;
+DROP TABLE IF EXISTS settings;
+DROP TABLE IF EXISTS reservation_status_history;
+DROP TABLE IF EXISTS oil_changes;
+DROP TABLE IF EXISTS inspection_photos;
+DROP TABLE IF EXISTS mileage_records;
+DROP TABLE IF EXISTS customer_documents;
+DROP TABLE IF EXISTS vehicle_documents;
+DROP TABLE IF EXISTS vehicle_photos;

@@ -1,0 +1,51 @@
+{{define "content"}}
+<section class="container">
+  <form action="/search" method="get" class="search-widget" style="margin-top: 16px; margin-bottom: 28px;">
+    <div><label>Pickup</label><input type="datetime-local" name="from" value="{{ .From }}" required></div>
+    <div><label>Return</label><input type="datetime-local" name="to" value="{{ .To }}" required></div>
+    <div><label>Branch</label><select name="branch"><option value="">Any</option></select></div>
+    <button type="submit">Search</button>
+  </form>
+
+  {{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+
+  {{ if .Results }}
+    <div class="flex-between" style="margin-bottom: 16px;">
+      <h2 style="margin:0;">Available cars</h2>
+      <span class="muted">{{ len .Results }} available</span>
+    </div>
+    <div class="vehicle-grid">
+      {{ range .Results }}
+      <article class="vehicle-card">
+        <div class="img" {{ if .PrimaryPhoto }}style="background-image:url('{{ .PrimaryPhoto }}')"{{ end }}>
+          {{ if not .PrimaryPhoto }}&#128663;{{ end }}
+        </div>
+        <div class="body">
+          <h3>{{ .Year }} {{ .Make }} {{ .Model }}</h3>
+          <p class="muted" style="margin:0 0 12px; font-size: 13px;">
+            {{ if .Seats }}{{ .Seats }} seats{{ end }}
+            {{ if .Transmission }} &middot; {{ .Transmission }}{{ end }}
+            {{ if .FuelType }} &middot; {{ .FuelType }}{{ end }}
+          </p>
+          <div class="flex-between">
+            <div class="price">${{ dollars .DailyRateCents }}<small>/day</small></div>
+            {{ if gt .DepositCents 0 }}<span class="badge">Deposit ${{ dollars .DepositCents }}</span>{{ end }}
+          </div>
+          <a href="/book?v={{ .ID }}&from={{ $.From }}&to={{ $.To }}" class="btn" style="margin-top: 14px; width: 100%; text-align: center;">Book now</a>
+        </div>
+      </article>
+      {{ end }}
+    </div>
+  {{ else if .Searched }}
+    <div class="card" style="text-align:center; padding: 60px;">
+      <h3>No matches for those dates.</h3>
+      <p class="muted">Try different dates.</p>
+    </div>
+  {{ else }}
+    <div class="card" style="text-align:center; padding: 60px;">
+      <h3>Ready when you are.</h3>
+      <p class="muted">Set your pickup and return dates above to see what's available.</p>
+    </div>
+  {{ end }}
+</section>
+{{end}}

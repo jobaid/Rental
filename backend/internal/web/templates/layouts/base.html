@@ -1,0 +1,24 @@
+{{define "base"}}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ .Title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/app.css?v=2">
+</head>
+<body>
+{{ template "header" . }}
+{{ template "content" . }}
+{{ template "footer" . }}
+</body>
+</html>
+{{end}}
+
+{{define "footer"}}
+<footer class="site-footer">
+  <div><strong>mosrental</strong> &middot; car rental</div>
+</footer>
+{{end}}

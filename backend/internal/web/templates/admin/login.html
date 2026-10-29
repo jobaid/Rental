@@ -1,0 +1,19 @@
+{{define "header"}}{{end}}
+{{define "footer"}}{{end}}
+{{define "content"}}
+<section class="center-page">
+  <form method="post" action="/admin/login" class="card">
+    <h2>Staff sign in</h2>
+    <input type="hidden" name="next" value="{{ .Next }}">
+    <label>Email</label>
+    <input type="email" name="email" required autofocus>
+    <label>Password</label>
+    <input type="password" name="password" required>
+    {{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+    <button type="submit" style="margin-top: 14px; width: 100%;">Sign in</button>
+    <p class="muted" style="font-size:12px; margin-top: 14px; text-align:center;">
+      First-time setup? <a href="/admin/setup">Create the admin account</a>.
+    </p>
+  </form>
+</section>
+{{end}}

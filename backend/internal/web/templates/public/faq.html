@@ -1,0 +1,64 @@
+{{define "content"}}
+<section class="page-hero">
+  <h1>Frequently asked questions</h1>
+  <p>The stuff everyone wants to know before they book.</p>
+</section>
+
+<section style="max-width: 760px; margin: 0 auto; padding: 48px 24px;" class="faq reveal">
+  <h3 style="margin-bottom: 16px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);">Booking</h3>
+  <details open>
+    <summary>Do I need to create an account to rent a car?</summary>
+    <div class="answer">No. Guest checkout works — enter your details once at the end and you're done. You can optionally set a password on the last step to unlock a portal that shows all your bookings.</div>
+  </details>
+  <details>
+    <summary>What documents do I need to pick up a car?</summary>
+    <div class="answer">A valid driver's license (any country, must be unexpired) and the credit or debit card the booking is tied to. If you're not the primary driver, we also need the primary driver's license at pickup.</div>
+  </details>
+  <details>
+    <summary>How far in advance can I book?</summary>
+    <div class="answer">Up to one year ahead. The booking engine won't accept dates more than 365 days out.</div>
+  </details>
+  <details>
+    <summary>Can I change or cancel my booking?</summary>
+    <div class="answer">Yes. Open <a href="/portal">My booking</a>, pick the reservation, and request a change. If the new car isn't available for the new dates we'll suggest alternatives.</div>
+  </details>
+
+  <h3 style="margin: 28px 0 16px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);">Pricing &amp; payment</h3>
+  <details>
+    <summary>What's included in the price?</summary>
+    <div class="answer">The daily rental rate and any add-ons you selected (child seat, GPS, etc.). Insurance is <em>optional</em> — if you don't want our coverage, you can decline and use your own. Tax is shown as a separate line.</div>
+  </details>
+  <details>
+    <summary>Is there a security deposit?</summary>
+    <div class="answer">Yes, a refundable deposit is held on your card at pickup. The amount is shown on the vehicle card before you book. We release it within a few business days after a clean return.</div>
+  </details>
+  <details>
+    <summary>Can I pay in cash?</summary>
+    <div class="answer">Yes at the counter, if your branch has that configured. The deposit still needs to be a card hold.</div>
+  </details>
+
+  <h3 style="margin: 28px 0 16px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);">Pickup &amp; return</h3>
+  <details>
+    <summary>Can someone else drive the car?</summary>
+    <div class="answer">Only if they're added as an "Additional driver" and present their license at pickup. There's a flat fee for that add-on.</div>
+  </details>
+  <details>
+    <summary>What if I'm late returning the car?</summary>
+    <div class="answer">We give a grace window (shown in the rental agreement). After that, a late-return fee applies. If you know you'll be late, open <a href="/portal">My booking</a> and request an extension — if the car is available, we approve it.</div>
+  </details>
+  <details>
+    <summary>What's the fuel policy?</summary>
+    <div class="answer">Return the car at the same fuel level as pickup. We record both at the counter. If the tank is lower on return, you're charged the pump rate per litre plus a small refuelling fee.</div>
+  </details>
+  <details>
+    <summary>What about damage?</summary>
+    <div class="answer">We photograph the car at pickup and at return. You'll get a photo-upload link too so you have your own record. Any new damage is reviewed by a human — nothing is charged automatically.</div>
+  </details>
+
+  <h3 style="margin: 28px 0 16px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);">Still stuck?</h3>
+  <details>
+    <summary>How do I reach a human?</summary>
+    <div class="answer">The quickest way is the <a href="/contact">contact form</a>. We also publish our phone number there. We don't do call-centre runaround — the person who answers can usually fix things on the first call.</div>
+  </details>
+</section>
+{{end}}

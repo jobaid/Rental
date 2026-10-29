@@ -1,0 +1,165 @@
+{{define "content"}}
+<style>
+  .inv-wrap { max-width: 1100px; }
+  .inv-top { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:16px; flex-wrap:wrap; }
+  .inv-title h2 { margin:0 0 4px; }
+  .inv-title .sub { color:var(--muted); font-size:14px; }
+  .inv-actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .inv-grid { display:grid; grid-template-columns: 2fr 1fr; gap:16px; }
+  @media (max-width: 900px) { .inv-grid { grid-template-columns: 1fr; } }
+  table.lineitems { width:100%; border-collapse:collapse; }
+  table.lineitems th { text-align:left; font-size:11px; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; padding:10px 6px; border-bottom:1px solid var(--border); }
+  table.lineitems td { padding:8px 6px; vertical-align:top; border-bottom:1px solid var(--border); }
+  table.lineitems td input { width:100%; padding:6px 8px; font-size:13px; }
+  table.lineitems td.q input, table.lineitems td.u input, table.lineitems td.a input { text-align:right; }
+  table.lineitems td.rm { width:34px; text-align:center; }
+  table.lineitems td.rm button { background:none; border:none; color:#dc2626; cursor:pointer; font-size:18px; padding:0; }
+  .add-row { margin-top:12px; }
+  .totals-mini { margin-top:12px; display:grid; grid-template-columns: 1fr auto; gap:4px 24px; font-size:14px; }
+  .totals-mini .grand { font-size:18px; font-weight:700; border-top:2px solid var(--accent); padding-top:8px; margin-top:8px; }
+  textarea.terms { width:100%; min-height:160px; font-family:inherit; font-size:13px; }
+  .stbadge { display:inline-block; padding:2px 10px; border-radius:999px; font-size:11px; letter-spacing:.5px; text-transform:uppercase; font-weight:600; }
+  .stbadge.draft { background:#f3f4f6; color:#374151; }
+  .stbadge.issued { background:#dbeafe; color:#1e40af; }
+  .stbadge.sent { background:#fef3c7; color:#92400e; }
+  .stbadge.paid { background:#dcfce7; color:#166534; }
+  .stbadge.void { background:#fee2e2; color:#991b1b; }
+  .kind-pill { background:var(--accent-soft); color:var(--accent); padding:2px 10px; border-radius:999px; font-size:11px; letter-spacing:1px; text-transform:uppercase; font-weight:700; }
+</style>
+
+<div class="inv-wrap">
+{{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
+{{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+
+<div class="inv-top">
+  <div class="inv-title">
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:4px;">
+      <span class="kind-pill">{{ if eq .Inv.Kind "pre" }}Pre-rental{{ else }}Final invoice{{ end }}</span>
+      <span class="stbadge {{ .Inv.Status }}">{{ .Inv.Status }}</span>
+    </div>
+    <h2>{{ .Inv.Number }}</h2>
+    <div class="sub">Booking <a href="/admin/reservations/{{ .Inv.ReservationID }}">{{ .Inv.BookingNumber }}</a> · {{ .Inv.CustomerName }} · {{ .Inv.VehicleLabel }}</div>
+  </div>
+  <div class="inv-actions">
+    <a class="btn secondary" href="/admin/invoices/{{ .Inv.ID }}/print" target="_blank">Print preview</a>
+    <a class="btn secondary" href="/invoices/{{ .Inv.PublicToken }}" target="_blank">Customer link</a>
+    {{ if ne .Inv.Status "paid" }}
+      <form method="post" action="/admin/invoices/{{ .Inv.ID }}/status" style="display:inline;">
+        <input type="hidden" name="status" value="issued">
+        <button class="secondary">Mark issued</button>
+      </form>
+      <form method="post" action="/admin/invoices/{{ .Inv.ID }}/status" style="display:inline;">
+        <input type="hidden" name="status" value="paid">
+        <button class="secondary">Mark paid</button>
+      </form>
+    {{ end }}
+    {{ if ne .Inv.Status "void" }}
+      <form method="post" action="/admin/invoices/{{ .Inv.ID }}/status" style="display:inline;" onsubmit="return confirm('Void this invoice?');">
+        <input type="hidden" name="status" value="void">
+        <button class="danger">Void</button>
+      </form>
+    {{ end }}
+    <a class="btn ghost" href="/admin/reservations/{{ .Inv.ReservationID }}">Back</a>
+  </div>
+</div>
+
+<form method="post" action="/admin/invoices/{{ .Inv.ID }}" id="invForm">
+<div class="inv-grid">
+  <div class="card">
+    <h3 style="margin-top:0;">Line items</h3>
+    <table class="lineitems" id="items">
+      <thead><tr><th>Description</th><th class="q" style="width:90px;text-align:right;">Qty</th><th class="u" style="width:120px;text-align:right;">Unit $</th><th class="a" style="width:120px;text-align:right;">Amount $</th><th class="rm"></th></tr></thead>
+      <tbody>
+      {{ range $i, $it := .Inv.Items }}
+        <tr>
+          <td><input type="hidden" name="item_{{ $i }}_id" value="{{ $it.ID }}"><input type="hidden" name="item_{{ $i }}_sort" value="{{ $i }}"><input name="item_{{ $i }}_desc" value="{{ $it.Description }}" required></td>
+          <td class="q"><input name="item_{{ $i }}_qty" value="{{ printf "%.2f" $it.Quantity }}" type="number" step="0.01" min="0"></td>
+          <td class="u"><input name="item_{{ $i }}_unit" value="{{ dollars $it.UnitPriceCents }}" type="number" step="0.01" min="0"></td>
+          <td class="a"><input name="item_{{ $i }}_amount" value="{{ dollars $it.AmountCents }}" type="number" step="0.01" min="0"></td>
+          <td class="rm"><label title="Remove this line"><input type="checkbox" name="item_{{ $i }}_delete" value="1" style="transform:scale(1.2);"></label></td>
+        </tr>
+      {{ end }}
+      </tbody>
+    </table>
+    <div class="add-row">
+      <button type="button" class="secondary" onclick="addItemRow()">+ Add line item</button>
+    </div>
+
+    <div style="margin-top:20px;">
+      <label>Notes shown to customer</label>
+      <textarea name="notes" rows="3" placeholder="Internal notes won't appear on the invoice. These will.">{{ or (deref .Inv.Notes) "" }}</textarea>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <h3 style="margin-top:0;">Totals</h3>
+      <div class="flex" style="gap:8px;">
+        <div style="flex:1;">
+          <label>Tax label</label>
+          <input name="taxLabel" value="{{ .Inv.TaxLabel }}">
+        </div>
+        <div style="width:90px;">
+          <label>Rate %</label>
+          <input name="taxRatePct" type="number" min="0" max="100" value="{{ .Inv.TaxRatePct }}">
+        </div>
+      </div>
+      <div class="totals-mini">
+        <span class="muted">Subtotal</span><span>${{ dollars .Inv.SubtotalCents }}</span>
+        <span class="muted">{{ .Inv.TaxLabel }}</span><span>${{ dollars .Inv.TaxCents }}</span>
+        <span class="grand">Total</span><span class="grand">${{ dollars .Inv.TotalCents }}</span>
+      </div>
+      <p class="muted" style="font-size:12px; margin-top:10px;">Totals recompute from the line items when you save.</p>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h3 style="margin-top:0;">Terms &amp; Conditions{{ if .Inv.TookInsurance }} <span class="kind-pill" style="margin-left:6px;">Insurance taken</span>{{ end }}</h3>
+      {{ if .Inv.TookInsurance }}<p class="muted" style="font-size:13px; margin-top:0;">Customer chose <strong>{{ .Inv.InsuranceName }}</strong>. These terms will be emailed with the invoice.</p>{{ end }}
+      <textarea class="terms" name="terms">{{ or (deref .Inv.Terms) "" }}</textarea>
+    </div>
+  </div>
+</div>
+
+<div class="flex" style="margin-top:16px;justify-content:flex-end;gap:10px;">
+  <button type="submit">Save changes</button>
+</div>
+</form>
+
+<div class="card" style="margin-top:20px;">
+  <h3 style="margin-top:0;">Send to customer</h3>
+  <form method="post" action="/admin/invoices/{{ .Inv.ID }}/send">
+    <div class="flex" style="gap:10px;">
+      <div style="flex:1;">
+        <label>To</label>
+        <input name="to" value="{{ .Inv.CustomerEmail }}" type="email" required>
+      </div>
+      <div style="flex:2;">
+        <label>Subject</label>
+        <input name="subject" value="{{ if eq .Inv.Kind "pre" }}Pre-rental invoice {{ .Inv.Number }}{{ else }}Your final invoice {{ .Inv.Number }}{{ end }} — {{ .Inv.CompanyName }}">
+      </div>
+    </div>
+    <label>Message (optional note shown above the invoice)</label>
+    <textarea name="message" rows="3" placeholder="Thanks for renting with us! Please review the final invoice attached below…"></textarea>
+    <div class="muted" style="font-size:12px;margin-top:6px;">The professional HTML invoice is rendered inline in the email body{{ if .Inv.TookInsurance }}, including the insurance Terms &amp; Conditions{{ end }}.</div>
+    <div style="margin-top:10px;"><button>Send invoice email</button></div>
+  </form>
+</div>
+
+</div>
+
+<script>
+let nextIdx = {{ len .Inv.Items }};
+function addItemRow() {
+  const tbody = document.querySelector('#items tbody');
+  const k = 'new' + nextIdx++;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="hidden" name="item_${k}_id" value=""><input type="hidden" name="item_${k}_sort" value="${nextIdx}"><input name="item_${k}_desc" placeholder="Description" required></td>
+    <td class="q"><input name="item_${k}_qty" value="1.00" type="number" step="0.01" min="0"></td>
+    <td class="u"><input name="item_${k}_unit" value="0.00" type="number" step="0.01" min="0"></td>
+    <td class="a"><input name="item_${k}_amount" value="0.00" type="number" step="0.01" min="0"></td>
+    <td class="rm"><label title="Remove"><input type="checkbox" name="item_${k}_delete" value="1" style="transform:scale(1.2);"></label></td>`;
+  tbody.appendChild(tr);
+}
+</script>
+{{end}}

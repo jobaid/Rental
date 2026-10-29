@@ -1,0 +1,39 @@
+{{define "content"}}
+<h2>Dashboard</h2>
+<p class="muted" style="margin-bottom: 20px;">Operational overview as of {{ .Now }}.</p>
+
+<div class="kpi">
+  <div class="tile"><div class="lbl">Fleet size</div><div class="num">{{ .Stats.fleetSize }}</div></div>
+  <div class="tile"><div class="lbl">Available now</div><div class="num">{{ .Stats.available }}</div></div>
+  <div class="tile"><div class="lbl">On rent</div><div class="num">{{ .Stats.rented }}</div></div>
+  <div class="tile"><div class="lbl">Maintenance</div><div class="num">{{ .Stats.maintenance }}</div></div>
+  <div class="tile"><div class="lbl">Today's pickups</div><div class="num">{{ .TodayPickups }}</div></div>
+  <div class="tile"><div class="lbl">Today's returns</div><div class="num">{{ .TodayReturns }}</div></div>
+  <div class="tile"><div class="lbl">Overdue</div><div class="num">{{ .Overdue }}</div></div>
+  <div class="tile"><div class="lbl">Pending reservations</div><div class="num">{{ .Pending }}</div></div>
+</div>
+
+<div class="row" style="margin-top: 24px;">
+  <div class="card">
+    <h3>Revenue</h3>
+    <div class="price-breakdown">
+      <span class="muted">Collected</span><span>${{ dollars .Reports.revenueCents }}</span>
+      <span class="muted">Outstanding</span><span>${{ dollars .Reports.outstandingCents }}</span>
+      <span class="muted">Bookings total</span><span>{{ .Reports.bookings }}</span>
+      <span class="muted">Cancelled</span><span>{{ .Reports.cancelled }}</span>
+      <span class="muted">Utilization</span><span>{{ .Reports.utilizationPct }}%</span>
+      <span class="muted">Maintenance spend</span><span>${{ dollars .Reports.maintenanceCents }}</span>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Fleet alerts</h3>
+    {{ if .Alerts }}
+      <ul style="padding-left: 20px; margin: 0;">
+      {{ range .Alerts }}<li style="font-size:13px;"><strong>{{ .Vehicle }}</strong>: {{ .Message }}</li>{{ end }}
+      </ul>
+    {{ else }}
+      <p class="muted">No pressing alerts.</p>
+    {{ end }}
+  </div>
+</div>
+{{end}}
