@@ -1,0 +1,36 @@
+{{define "content"}}
+<h2>Driver license review</h2>
+<p class="muted" style="margin-bottom: 16px;">The automated check is a sanity test only. Inspect the physical license at pickup.</p>
+
+<div class="card" style="padding:0;">
+<table>
+  <thead><tr><th>Customer</th><th>Booking</th><th>License #</th><th>Expiry</th><th>Auto</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+    {{ range .List }}
+    <tr>
+      <td><strong>{{ .Customer }}</strong></td>
+      <td>{{ or .BookingNumber "—" }}</td>
+      <td style="font-family: monospace;">{{ .LicenseNumber }}</td>
+      <td class="muted">{{ or .ExpiresOn "—" }}</td>
+      <td>{{ if .ChecksumValid }}<span class="badge ok">plausible</span>{{ else }}<span class="badge danger">suspicious</span>{{ end }}</td>
+      <td><span class="badge {{ if eq .ManualStatus "approved" }}ok{{ else if eq .ManualStatus "rejected" }}danger{{ else }}warn{{ end }}">{{ .ManualStatus }}</span></td>
+      <td>
+      {{ if eq .ManualStatus "pending" }}
+        <form method="post" action="/admin/licenses/{{ .ID }}" style="display:inline;">
+          <input type="hidden" name="status" value="approved">
+          <button class="small">Approve</button>
+        </form>
+        <form method="post" action="/admin/licenses/{{ .ID }}" style="display:inline;">
+          <input type="hidden" name="status" value="rejected">
+          <button class="small secondary">Reject</button>
+        </form>
+      {{ end }}
+      </td>
+    </tr>
+    {{ else }}
+    <tr><td colspan="7" class="muted" style="text-align:center; padding: 40px;">Nothing to review.</td></tr>
+    {{ end }}
+  </tbody>
+</table>
+</div>
+{{end}}

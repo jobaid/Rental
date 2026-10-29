@@ -1,0 +1,32 @@
+{{define "content"}}
+<section class="hero">
+  <h1>Drive what you love.<br>Rent in under a minute.</h1>
+  <p>Pick a date. Pick a car. Pay only when you pick it up.</p>
+  <form action="/search" method="get" class="search-widget">
+    <div>
+      <label>Pickup</label>
+      <input type="datetime-local" name="from" value="{{ .DefaultFrom }}" required>
+    </div>
+    <div>
+      <label>Return</label>
+      <input type="datetime-local" name="to" value="{{ .DefaultTo }}" required>
+    </div>
+    <div>
+      <label>Branch</label>
+      <select name="branch">
+        <option value="">Any branch</option>
+        {{ range .Branches }}<option value="{{ .ID }}">{{ .Name }}</option>{{ end }}
+      </select>
+    </div>
+    <button type="submit">Search cars</button>
+  </form>
+</section>
+
+<section class="container">
+  <div class="row-3">
+    <div class="card"><h3>&#9889; Live availability</h3><p class="muted">Real-time inventory across every branch — no overbooking, ever.</p></div>
+    <div class="card"><h3>&#128179; Transparent pricing</h3><p class="muted">Daily rates with deposit shown up front.</p></div>
+    <div class="card"><h3>&#128221; Sign in your browser</h3><p class="muted">E-sign the rental agreement from your phone.</p></div>
+  </div>
+</section>
+{{end}}

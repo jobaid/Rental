@@ -1,0 +1,13 @@
+{{define "content"}}
+<h2>Reports</h2>
+<div class="kpi">
+  <div class="tile"><div class="lbl">Revenue</div><div class="num">${{ dollars .Reports.revenueCents }}</div></div>
+  <div class="tile"><div class="lbl">Outstanding</div><div class="num">${{ dollars .Reports.outstandingCents }}</div></div>
+  <div class="tile"><div class="lbl">Bookings</div><div class="num">{{ .Reports.bookings }}</div></div>
+  <div class="tile"><div class="lbl">Cancelled</div><div class="num">{{ .Reports.cancelled }}</div></div>
+  <div class="tile"><div class="lbl">Fleet</div><div class="num">{{ .Reports.fleet }}</div></div>
+  <div class="tile"><div class="lbl">Utilization %</div><div class="num">{{ .Reports.utilizationPct }}</div></div>
+  <div class="tile"><div class="lbl">Maintenance</div><div class="num">${{ dollars .Reports.maintenanceCents }}</div></div>
+</div>
+<p style="margin-top:16px;"><a href="/admin/reports.csv" class="btn secondary">Export CSV</a></p>
+{{end}}

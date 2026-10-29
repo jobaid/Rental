@@ -1,0 +1,101 @@
+{{define "content"}}
+<div class="flex-between" style="margin-bottom: 16px;">
+  <h2 style="margin:0;">Booking {{ .R.BookingNumber }} <span class="badge {{ statusClass .R.Status }}">{{ .R.Status }}</span></h2>
+  <div class="flex">
+    <a href="/api/manager/reservations/{{ .R.ID }}/agreement.pdf" class="btn secondary" target="_blank">Agreement PDF</a>
+    <a href="/api/manager/reservations/{{ .R.ID }}/invoice.pdf" class="btn secondary" target="_blank">Invoice PDF</a>
+    <form method="post" action="/admin/reservations/{{ .R.ID }}/photo-link" style="display:inline;">
+      <button class="secondary">Email photo link</button>
+    </form>
+    <a href="/admin/reservations" class="btn ghost">Back</a>
+  </div>
+</div>
+
+{{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
+{{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+{{ if .PhotoLink }}
+<div class="card" style="background: var(--accent-soft); border-color: var(--accent); margin-bottom: 20px;">
+  <strong>Photo-upload link ready.</strong> Share this with the customer (email was queued):
+  <div style="font-family: monospace; margin-top: 6px; word-break: break-all;">{{ .PhotoLink }}</div>
+</div>
+{{ end }}
+
+<div class="row">
+  <div class="card">
+    <h3>Details</h3>
+    <div class="price-breakdown">
+      <span class="muted">Customer</span><span>{{ or .R.CustomerName "—" }}</span>
+      <span class="muted">Vehicle</span><span>{{ or .R.VehicleLabel "—" }}</span>
+      <span class="muted">Pickup</span><span>{{ fmtTime .R.PickupAt }}</span>
+      <span class="muted">Return</span><span>{{ fmtTime .R.ReturnAt }}</span>
+      <span class="muted">Rate</span><span>${{ dollars .R.DailyRateCents }} &times; {{ .R.RentalDays }} day(s)</span>
+      <span class="muted">Subtotal</span><span>${{ dollars .R.SubtotalCents }}</span>
+      <span class="muted">Extras</span><span>${{ dollars .R.ExtrasCents }}</span>
+      <span class="muted">Tax</span><span>${{ dollars .R.TaxCents }}</span>
+      <div class="total"><span>Total</span><span>${{ dollars .R.TotalCents }}</span></div>
+      <span class="muted">Paid</span><span>${{ dollars .R.PaidCents }}</span>
+      <span class="muted">Balance</span><span><strong>${{ dollars (sub .R.TotalCents .R.PaidCents) }}</strong></span>
+    </div>
+  </div>
+
+  <div class="card" id="actions">
+    <h3>Actions</h3>
+    {{ if eq .R.Status "pending" }}
+    <form method="post" action="/admin/reservations/{{ .R.ID }}/status">
+      <input type="hidden" name="status" value="confirmed">
+      <button style="width:100%;">Confirm booking</button>
+    </form>
+    <hr>
+    {{ end }}
+
+    <h3 id="checkout" style="font-size:14px; margin-top: 10px;">Check out (pickup)</h3>
+    <form method="post" action="/admin/reservations/{{ .R.ID }}/checkout">
+      <label>Odometer (km) — required</label>
+      <input type="number" name="odometerKm" required min="1">
+      <label>Fuel level (%) — required</label>
+      <input type="number" name="fuelPct" min="0" max="100" value="100">
+      <label>Note</label>
+      <input name="note" placeholder="e.g. small scratch on rear bumper">
+      <button style="margin-top: 10px; width: 100%;">Check out vehicle</button>
+    </form>
+
+    <hr>
+
+    <h3 id="checkin" style="font-size:14px;">Check in (return)</h3>
+    <form method="post" action="/admin/reservations/{{ .R.ID }}/checkin">
+      <label>Odometer (km) — required</label>
+      <input type="number" name="odometerKm" required min="1">
+      <label>Fuel level (%) — required</label>
+      <input type="number" name="fuelPct" min="0" max="100" value="100">
+      <label>Note</label>
+      <input name="note">
+      <button class="secondary" style="margin-top: 10px; width: 100%;">Check in vehicle</button>
+    </form>
+  </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+  <h3>Record payment</h3>
+  <form method="post" action="/admin/reservations/{{ .R.ID }}/payment" class="flex" style="gap: 10px;">
+    <input type="number" name="amountCents" required placeholder="Amount in cents" style="flex:1;">
+    <select name="method" style="width: 140px;">
+      <option value="cash">Cash</option>
+      <option value="card">Card</option>
+      <option value="bank">Bank</option>
+      <option value="manual">Manual</option>
+    </select>
+    <input name="reference" placeholder="Reference" style="flex:1;">
+    <button>Record payment</button>
+  </form>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+  <h3>Status history</h3>
+  <table>
+    <thead><tr><th>When</th><th>From</th><th>To</th></tr></thead>
+    <tbody>
+      {{ range .History }}<tr><td class="muted">{{ fmtTime .CreatedAt }}</td><td>{{ or .FromStatus "—" }}</td><td><span class="badge {{ statusClass .ToStatus }}">{{ .ToStatus }}</span></td></tr>{{ end }}
+    </tbody>
+  </table>
+</div>
+{{end}}

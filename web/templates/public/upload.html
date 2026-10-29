@@ -1,0 +1,28 @@
+{{define "content"}}
+<section class="container narrow">
+  <div class="card" style="margin-bottom: 20px;">
+    <h2 style="margin:0;">Upload your vehicle photos</h2>
+    <p class="muted" style="margin: 6px 0 0;">Booking <strong>{{ .Info.BookingNumber }}</strong> · {{ .Info.Vehicle }} · {{ .Info.Customer }}</p>
+    <p class="muted" style="font-size: 13px; margin-top: 10px;">Clear daylight shots work best. You can return to this link within 14 days.</p>
+  </div>
+
+  {{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+  {{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
+
+  <div class="row-3">
+    {{ range .Slots }}
+    <form method="post" action="/upload/{{ $.Token }}" enctype="multipart/form-data" class="card">
+      <strong>{{ .Label }}</strong>
+      <input type="hidden" name="slot" value="{{ .Slot }}">
+      <input type="file" accept="image/*" capture="environment" name="file" style="margin-top: 10px;" required>
+      <button style="margin-top: 10px; width: 100%;">Upload</button>
+    </form>
+    {{ end }}
+  </div>
+
+  <div class="card" style="margin-top: 20px; text-align: center;">
+    <h3 style="margin:0;">Done? 👍</h3>
+    <p class="muted" style="font-size:13px; margin: 6px 0 0;">Close this page when all slots are uploaded.</p>
+  </div>
+</section>
+{{end}}

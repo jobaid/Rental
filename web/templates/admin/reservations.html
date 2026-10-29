@@ -1,0 +1,56 @@
+{{define "content"}}
+<div class="flex-between" style="margin-bottom: 16px;">
+  <h2 style="margin:0;">Reservations</h2>
+  <a href="/admin/reservations/new" class="btn">+ New reservation</a>
+</div>
+
+<div class="tabs">
+  {{ range .Tabs }}
+  <a href="?tab={{ .Key }}{{ if $.Q }}&q={{ $.Q }}{{ end }}" class="{{ if eq $.Tab .Key }}active{{ end }}">{{ .Label }} ({{ .Count }})</a>
+  {{ end }}
+</div>
+
+<form method="get" style="margin-bottom: 16px; display: flex; gap: 10px;">
+  <input type="hidden" name="tab" value="{{ .Tab }}">
+  <input name="q" value="{{ .Q }}" placeholder="Search booking #, customer, plate, email">
+  <button class="secondary">Search</button>
+</form>
+
+{{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
+
+<div class="card" style="padding:0;">
+<table>
+  <thead>
+    <tr><th>#</th><th>Customer</th><th>Vehicle</th><th>Pickup</th><th>Return</th><th>Total</th><th>Status</th><th>Actions</th></tr>
+  </thead>
+  <tbody>
+    {{ range .Reservations }}
+    <tr>
+      <td><a href="/admin/reservations/{{ .ID }}"><strong>{{ .BookingNumber }}</strong></a></td>
+      <td>{{ or .CustomerName "—" }}</td>
+      <td class="muted">{{ or .VehicleLabel "—" }}</td>
+      <td class="muted">{{ fmtTime .PickupAt }}</td>
+      <td class="muted">{{ fmtTime .ReturnAt }}</td>
+      <td>${{ dollars .TotalCents }}</td>
+      <td><span class="badge {{ statusClass .Status }}">{{ .Status }}</span></td>
+      <td>
+        <div class="flex" style="gap:4px;">
+          {{ if eq .Status "pending" }}
+            <form method="post" action="/admin/reservations/{{ .ID }}/status" style="display:inline;"><input type="hidden" name="status" value="confirmed"><button class="small">Confirm</button></form>
+          {{ end }}
+          {{ if or (eq .Status "confirmed") (eq .Status "pending") }}
+            <a href="/admin/reservations/{{ .ID }}#checkout" class="btn small">Check out</a>
+          {{ end }}
+          {{ if eq .Status "checked_out" }}
+            <a href="/admin/reservations/{{ .ID }}#checkin" class="btn small">Check in</a>
+          {{ end }}
+        </div>
+      </td>
+    </tr>
+    {{ else }}
+    <tr><td colspan="8" class="muted" style="text-align:center; padding: 40px;">No reservations match.</td></tr>
+    {{ end }}
+  </tbody>
+</table>
+</div>
+{{end}}

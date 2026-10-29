@@ -1,0 +1,23 @@
+{{define "content"}}
+<h2>Calendar — next 14 days</h2>
+<div class="card" style="overflow-x: auto; padding: 0;">
+<table style="min-width: 900px;">
+  <thead>
+    <tr><th>Vehicle</th>{{ range .Days }}<th class="muted" style="font-size:11px;">{{ fmtDay . }}</th>{{ end }}</tr>
+  </thead>
+  <tbody>
+  {{ range $veh, $list := .Groups }}
+    <tr>
+      <td><strong>{{ $veh }}</strong></td>
+      {{ range $.Days }}
+        {{ $cell := cellFor $list . }}
+        <td style="padding:2px;">{{ if $cell }}<span class="badge dark" title="{{ $cell }}">{{ $cell }}</span>{{ end }}</td>
+      {{ end }}
+    </tr>
+  {{ else }}
+    <tr><td colspan="15" class="muted" style="text-align:center; padding:40px;">No bookings in range.</td></tr>
+  {{ end }}
+  </tbody>
+</table>
+</div>
+{{end}}
