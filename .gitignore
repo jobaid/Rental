@@ -16,6 +16,8 @@ frontend-react-archive/
 backend/bin/
 backend/tmp/
 backend/*.exe
+/backend/rental-server
+/backend/seed.exe
 
 # Frontend
 frontend/node_modules/
@@ -36,6 +38,7 @@ Thumbs.db
 # Postgres volume
 pgdata/
 
-# Uploaded files (dev local store)
-backend/storage/
-storage/
+# Uploaded files (dev local store) — anchored to repo root so the pattern
+# does NOT shadow backend/internal/storage/, which is a Go package.
+/backend/storage/
+/storage/
