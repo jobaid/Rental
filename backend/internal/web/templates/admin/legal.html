@@ -1,0 +1,88 @@
+{{define "content"}}
+<style>
+  .legal-wrap { max-width: 980px; }
+  .legal-head { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:14px; gap:12px; flex-wrap:wrap; }
+  .legal-head h2 { margin:0; }
+  .doc-tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:0; }
+  .doc-tabs a { padding:10px 18px; border-radius:8px 8px 0 0; background:#f1f5f9; color:#334155; font-weight:600; text-decoration:none; font-size:14px; border-bottom:3px solid transparent; }
+  .doc-tabs a.active { background:#fff; color:var(--accent); border-bottom-color:var(--accent); }
+  .doc-panel { background:#fff; border:1px solid var(--border); border-top:0; border-radius:0 0 10px 10px; padding:18px 20px 22px; }
+  .doc-panel textarea { width:100%; min-height:380px; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13px; line-height:1.55; padding:12px 14px; border:1px solid var(--border); border-radius:8px; }
+  .doc-panel .title-input { width:100%; padding:8px 12px; font-size:15px; font-weight:600; margin-bottom:10px; }
+  .doc-panel .foot { display:flex; justify-content:space-between; align-items:center; margin-top:12px; gap:10px; flex-wrap:wrap; }
+  .placeholders { background:#f8fafc; border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-bottom:14px; font-size:12.5px; }
+  .placeholders code { background:#fff; border:1px solid var(--border); padding:1px 7px; border-radius:4px; font-size:11.5px; cursor:pointer; margin-right:4px; display:inline-block; margin-bottom:3px; }
+  .placeholders code:hover { background:var(--accent-soft, #ecfeff); border-color:var(--accent); }
+</style>
+
+<div class="legal-wrap">
+  <div class="legal-head">
+    <div>
+      <h2>Agreements &amp; Terms</h2>
+      <p class="muted" style="font-size:13px; margin:4px 0 0;">What goes on your rental agreement PDF, your invoice terms, and your insurance T&amp;C. Edit here, applies to every new document.</p>
+    </div>
+    <a href="/admin/settings" class="btn ghost">← Settings</a>
+  </div>
+
+  {{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
+  {{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+
+  <div class="placeholders">
+    <strong>Placeholders you can use anywhere in the body:</strong><br>
+    {{ range .Placeholders }}<code onclick="insertPlaceholder('{{ .Token }}')" title="{{ .Label }}">{{ .Token }}</code>{{ end }}
+    <br><small class="muted">Click any token to insert it at the cursor position. They'll be replaced with real values when a customer's agreement or invoice is generated.</small>
+  </div>
+
+  <div class="doc-tabs">
+    <a href="#agreement" class="active" data-tab="agreement">1 · Rental Agreement</a>
+    <a href="#terms" data-tab="terms">2 · Invoice Terms</a>
+    <a href="#insurance" data-tab="insurance">3 · Insurance T&amp;C</a>
+  </div>
+
+  {{ template "legalPanel" (dict "id" "agreement" "kind" "agreement" "doc" .Agreement "active" true "hint" "Served as a PDF from the reservation page's 'Agreement PDF' button. Signed by both parties at pickup.") }}
+  {{ template "legalPanel" (dict "id" "terms" "kind" "terms" "doc" .Terms "active" false "hint" "Pre-filled into every new invoice when the customer did not take insurance. Managers can tweak per-invoice in the invoice editor.") }}
+  {{ template "legalPanel" (dict "id" "insurance" "kind" "insurance" "doc" .Insurance "active" false "hint" "Pre-filled into invoices when the customer accepted company insurance. Shown on the HTML invoice emailed to the customer.") }}
+</div>
+
+<script>
+  // Simple tab switcher.
+  function showTab(id){
+    document.querySelectorAll('.doc-tabs a').forEach(a => a.classList.toggle('active', a.dataset.tab === id));
+    document.querySelectorAll('.doc-panel').forEach(p => p.style.display = p.dataset.id === id ? '' : 'none');
+  }
+  document.querySelectorAll('.doc-tabs a').forEach(a => a.addEventListener('click', e => { showTab(a.dataset.tab); }));
+  // Deep link via hash
+  (function(){ var h=location.hash.replace('#',''); if(h) showTab(h); else showTab('agreement'); })();
+
+  // Click a placeholder chip to insert it where the cursor is in the currently-visible textarea.
+  function insertPlaceholder(token){
+    const panel = document.querySelector('.doc-panel:not([style*="display: none"]) textarea');
+    if (!panel) return;
+    const start = panel.selectionStart, end = panel.selectionEnd;
+    panel.value = panel.value.slice(0, start) + token + panel.value.slice(end);
+    panel.selectionStart = panel.selectionEnd = start + token.length;
+    panel.focus();
+  }
+</script>
+{{end}}
+
+{{define "legalPanel"}}
+<div class="doc-panel" data-id="{{ .id }}" {{ if not .active }}style="display:none;"{{ end }}>
+  <small class="muted">{{ .hint }}</small>
+  <form method="post" action="/admin/settings/legal" style="margin-top:12px;" id="form-{{ .kind }}">
+    <input type="hidden" name="kind" value="{{ .kind }}">
+    <label>Title</label>
+    <input class="title-input" name="title" value="{{ .doc.Title }}" required>
+    <label>Body</label>
+    <textarea name="body" required>{{ .doc.Body }}</textarea>
+    <div class="foot">
+      <button type="submit">Save changes</button>
+    </div>
+  </form>
+  <form method="post" action="/admin/settings/legal/reset" style="margin-top:8px;"
+        onsubmit="return confirm('Restore this template to the built-in default? Your edits will be lost.');">
+    <input type="hidden" name="kind" value="{{ .kind }}">
+    <button class="ghost" type="submit">Restore default</button>
+  </form>
+</div>
+{{end}}

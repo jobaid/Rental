@@ -176,10 +176,15 @@ func (h *Handler) EnsurePreInvoice(ctx context.Context, cid, resID uuid.UUID) (u
 		iTotal = iSub + iTax
 	}
 
-	// Insurance T&C seeded as the invoice's terms if the customer took coverage.
+	// Terms: if the customer took insurance, seed the insurance T&C;
+	// otherwise fall back to the manager-edited general Terms & Conditions
+	// template. Admins can override on a per-invoice basis in the editor.
 	var termsText string
 	if insCode != nil && *insCode != "" && *insCode != "none" {
 		termsText = h.insuranceTerms(ctx, cid, *insCode)
+	} else {
+		gen := h.legalGet(ctx, cid, "terms_and_conditions", defaultTerms)
+		termsText = h.expandLegal(ctx, cid, gen.Body, resID)
 	}
 
 	// Reserve a number and insert.

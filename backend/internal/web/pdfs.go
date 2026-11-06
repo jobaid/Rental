@@ -3,6 +3,7 @@ package web
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -18,54 +19,42 @@ import (
 func (h *Handler) AdminAgreementPDF(w http.ResponseWriter, r *http.Request) {
 	s, _ := From(r)
 	cid := *s.CompanyID
-	id := chi.URLParam(r, "id")
-	var booking, status, vehicle, customer string
-	var pickup, ret time.Time
-	var daily, days, total int
-	var company string
-	err := h.Pool.QueryRow(r.Context(), `
-		SELECT r.booking_number, r.status,
-		       COALESCE(v.year::text,'')||' '||COALESCE(v.make,'')||' '||COALESCE(v.model,''),
-		       COALESCE(cu.first_name||' '||cu.last_name,'(walk-in)'),
-		       r.pickup_at, r.return_at, r.daily_rate_cents, r.rental_days, r.total_cents,
-		       co.name
-		FROM reservations r
-		LEFT JOIN vehicles v ON v.id=r.vehicle_id
-		LEFT JOIN customers cu ON cu.id=r.customer_id
-		JOIN companies co ON co.id=r.company_id
-		WHERE r.company_id=$1 AND r.id=$2
-	`, cid, id).Scan(&booking, &status, &vehicle, &customer, &pickup, &ret, &daily, &days, &total, &company)
-	if err != nil {
+	ridStr := chi.URLParam(r, "id")
+	rid, perr := uuid.Parse(ridStr)
+	if perr != nil {
+		http.Error(w, "bad id", 400)
+		return
+	}
+	// Pull the manager-edited agreement template (title + body with placeholders),
+	// expand placeholders for this reservation, then render as PDF.
+	tpl := h.legalGet(r.Context(), cid, "agreement", defaultAgreement)
+	body := h.expandLegal(r.Context(), cid, tpl.Body, rid)
+
+	var booking string
+	_ = h.Pool.QueryRow(r.Context(),
+		`SELECT booking_number FROM reservations WHERE company_id=$1 AND id=$2`,
+		cid, rid).Scan(&booking)
+	if booking == "" {
 		http.Error(w, "booking not found", 404)
 		return
 	}
+
 	p := &handlers.PDFBuilder{}
-	p.Heading(company)
+	p.Heading(tpl.Title)
 	p.Blank()
-	p.Line("Rental Agreement")
-	p.Line("Booking: " + booking + "   Status: " + status)
-	p.Blank()
-	p.Line("Customer: " + customer)
-	p.Line("Vehicle:  " + vehicle)
-	p.Line("Pickup:   " + pickup.Format(time.RFC1123))
-	p.Line("Return:   " + ret.Format(time.RFC1123))
-	p.Blank()
-	p.Heading("Charges")
-	p.Line(fmt.Sprintf("Daily rate: $%.2f  x  %d day(s)", float64(daily)/100, days))
-	p.Line(fmt.Sprintf("Total:      $%.2f", float64(total)/100))
-	p.Blank()
-	p.Heading("Terms")
-	p.Line("1. Customer agrees to return the vehicle in equivalent condition.")
-	p.Line("2. Customer is responsible for traffic violations during the rental.")
-	p.Line("3. Additional mileage, fuel and damage charges apply per the agreed policy.")
-	p.Line("4. Late return incurs the configured late fee.")
-	p.Blank()
-	p.Line("Signed on behalf of " + company + ": __________________________")
-	p.Line("Signed by customer:               __________________________")
+	// Render the body line-by-line so blank lines become blank lines.
+	for _, ln := range strings.Split(body, "\n") {
+		if strings.TrimSpace(ln) == "" {
+			p.Blank()
+		} else {
+			p.Line(ln)
+		}
+	}
+	_ = time.Now // keep import used
 
 	w.Header().Set("Content-Type", "application/pdf")
 	w.Header().Set("Content-Disposition", `inline; filename="agreement-`+booking+`.pdf"`)
-	_, _ = w.Write(p.Build("Rental Agreement — " + booking))
+	_, _ = w.Write(p.Build(tpl.Title + " — " + booking))
 }
 
 // AdminInvoicePDF — kept at its original URL for backwards compatibility, but

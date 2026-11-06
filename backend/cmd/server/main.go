@@ -197,6 +197,9 @@ func main() {
 		r.Post("/admin/settings/smtp", web.SMTPPost)
 		r.Post("/admin/settings/smtp-test", web.SMTPTest)
 		r.Post("/admin/settings/tax", web.TaxPost)
+		r.Get("/admin/settings/legal", web.LegalSettings)
+		r.Post("/admin/settings/legal", web.LegalSave)
+		r.Post("/admin/settings/legal/reset", web.LegalReset)
 
 		// Toll management (E-ZPass Virginia + compatible).
 		r.Get("/admin/tolls", web.TollDashboard)

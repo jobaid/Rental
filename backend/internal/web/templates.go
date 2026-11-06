@@ -167,6 +167,7 @@ func Load() (*Templates, error) {
 		{"admin/customers.html",        "templates/admin/customers.html",        "templates/layouts/admin.html"},
 		{"admin/customer_detail.html",  "templates/admin/customer_detail.html",  "templates/layouts/admin.html"},
 		{"admin/users.html",            "templates/admin/users.html",            "templates/layouts/admin.html"},
+		{"admin/legal.html",            "templates/admin/legal.html",            "templates/layouts/admin.html"},
 		{"admin/active.html",           "templates/admin/active.html",           "templates/layouts/admin.html"},
 		{"admin/licenses.html",         "templates/admin/licenses.html",         "templates/layouts/admin.html"},
 		{"admin/calendar.html",         "templates/admin/calendar.html",         "templates/layouts/admin.html"},
