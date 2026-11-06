@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/rentalsoftware/backend/internal/handlers"
 )
 
@@ -67,13 +68,35 @@ func (h *Handler) AdminAgreementPDF(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(p.Build("Rental Agreement — " + booking))
 }
 
+// AdminInvoicePDF — kept at its original URL for backwards compatibility, but
+// now serves the modern professional invoice (which reads from invoice_items
+// and therefore includes tolls). Picks the reservation's post invoice when
+// available, otherwise the pre invoice.
 func (h *Handler) AdminInvoicePDF(w http.ResponseWriter, r *http.Request) {
 	s, _ := From(r)
 	cid := *s.CompanyID
-	id := chi.URLParam(r, "id")
+	rid := chi.URLParam(r, "id")
+	var invID uuid.UUID
+	err := h.Pool.QueryRow(r.Context(), `
+		SELECT id FROM invoices
+		 WHERE company_id=$1 AND reservation_id=$2::uuid
+		 ORDER BY CASE kind WHEN 'post' THEN 0 ELSE 1 END
+		 LIMIT 1
+	`, cid, rid).Scan(&invID)
+	if err == nil {
+		inv, lerr := h.loadInvoice(r.Context(), cid, invID)
+		if lerr == nil {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, _ = w.Write([]byte(h.renderInvoiceHTML(inv, "", false)))
+			return
+		}
+	}
+	// Fall back to the old text PDF only when no invoice row exists yet
+	// (shouldn't happen since booking creation drafts a pre-invoice).
+	id := rid
 	var booking, vehicle, customer, company string
 	var subtotal, extras, tax, total, paid int
-	err := h.Pool.QueryRow(r.Context(), `
+	err = h.Pool.QueryRow(r.Context(), `
 		SELECT r.booking_number,
 		       COALESCE(v.year::text,'')||' '||COALESCE(v.make,'')||' '||COALESCE(v.model,''),
 		       COALESCE(cu.first_name||' '||cu.last_name,'(walk-in)'),
