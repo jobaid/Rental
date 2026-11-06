@@ -118,6 +118,68 @@
   </form>
 </div>
 
+<a id="tolls"></a>
+<div class="card" style="margin-top: 20px;">
+  <div class="flex-between" style="margin-bottom:10px;">
+    <h3 style="margin:0;">Toll charges</h3>
+    <small class="muted">E-ZPass tolls attributed to this rental. Add late-arriving charges after the vehicle has been returned.</small>
+  </div>
+  <table>
+    <thead><tr><th>When</th><th>Location</th><th>Tag</th><th style="text-align:right;">Toll</th><th style="text-align:right;">Admin</th><th style="text-align:right;">Total</th><th>Status</th></tr></thead>
+    <tbody>
+      {{ range .Tolls }}
+      <tr>
+        <td class="muted" style="white-space:nowrap;">{{ .TransactionAt.Format "02 Jan 15:04" }}</td>
+        <td>
+          {{ or (deref .Location) "—" }}
+          {{ if or (deref .EntryPlaza) (deref .ExitPlaza) }}
+          <div class="muted" style="font-size:11px;">{{ deref .EntryPlaza }}{{ if and (deref .EntryPlaza) (deref .ExitPlaza) }} → {{ end }}{{ deref .ExitPlaza }}</div>
+          {{ end }}
+        </td>
+        <td style="font-family:monospace; font-size:12px;">{{ or .TransponderLabel "—" }}</td>
+        <td style="text-align:right;">${{ dollars .AmountCents }}</td>
+        <td style="text-align:right;">${{ dollars .AdminFeeCents }}</td>
+        <td style="text-align:right;"><strong>${{ dollars .TotalCents }}</strong></td>
+        <td class="muted" style="font-size:12px;">{{ .BillingStatus }}</td>
+      </tr>
+      {{ else }}
+      <tr><td colspan="7" class="muted" style="text-align:center;padding:16px;">No toll charges on this rental.</td></tr>
+      {{ end }}
+      {{ if .Tolls }}
+      <tr style="border-top:2px solid var(--border);">
+        <td colspan="5" style="text-align:right;"><strong>Toll subtotal</strong></td>
+        <td style="text-align:right;"><strong>${{ dollars .TollsTotal }}</strong></td>
+        <td></td>
+      </tr>
+      {{ end }}
+    </tbody>
+  </table>
+
+  <details style="margin-top:12px;">
+    <summary style="cursor:pointer; color:var(--accent); font-weight:600; font-size:13px;">+ Add toll charge</summary>
+    <form method="post" action="/admin/reservations/{{ .R.ID }}/tolls" style="margin-top:10px; display:grid; grid-template-columns:2fr 2fr 1fr 1fr auto; gap:8px; align-items:flex-end;">
+      <div>
+        <label>Location / plaza</label>
+        <input name="location" placeholder="e.g. I-95 Express Lanes">
+      </div>
+      <div>
+        <label>Transaction date/time</label>
+        <input type="datetime-local" name="transactionAt">
+      </div>
+      <div>
+        <label>Toll ($)</label>
+        <input type="number" step="0.01" min="0" name="amountDollars" required>
+      </div>
+      <div>
+        <label>Admin fee ($)</label>
+        <input type="number" step="0.01" min="0" name="adminFeeDollars" placeholder="default">
+      </div>
+      <div><button>Add</button></div>
+    </form>
+    <small class="muted" style="font-size:12px;">Admin fee defaults to the account setting if left blank. Submitting the same values twice won't duplicate.</small>
+  </details>
+</div>
+
 <div class="card" style="margin-top: 20px;">
   <h3 style="margin-top:0;">Fleet inspection report</h3>
   <p class="muted" style="font-size:13px; margin-top:0;">What the fleet prep team captured when they walked around the car. Generate a <strong>Fleet prep link</strong> above and share it with the branch — their photos, odometer / fuel readings and damage notes flow straight into this report.</p>

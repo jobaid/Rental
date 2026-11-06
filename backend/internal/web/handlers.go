@@ -482,6 +482,91 @@ func (h *Handler) Portal(w http.ResponseWriter, r *http.Request) {
 	h.render(w, r, "public/portal.html", "My bookings", "", map[string]any{"Bookings": bookings})
 }
 
+// PortalReservation shows the customer the full financial picture for one of
+// their rentals: dates, vehicle, invoices (links to the shareable token
+// pages), and toll charges that landed against the reservation.
+func (h *Handler) PortalReservation(w http.ResponseWriter, r *http.Request) {
+	s, _ := From(r)
+	id := chi.URLParam(r, "id")
+	type resView struct {
+		ID            uuid.UUID
+		BookingNumber string
+		Status        string
+		PickupAt      time.Time
+		ReturnAt      time.Time
+		Vehicle       string
+		CompanyName   string
+		SubtotalCents int
+		TaxCents      int
+		ExtrasCents   int
+		TotalCents    int
+		PaidCents     int
+		CompanyID     uuid.UUID
+	}
+	var v resView
+	err := h.Pool.QueryRow(r.Context(), `
+		SELECT r.id, r.booking_number, r.status, r.pickup_at, r.return_at,
+		       COALESCE(v.year::text,'')||' '||COALESCE(v.make,'')||' '||COALESCE(v.model,''),
+		       co.name,
+		       r.subtotal_cents, r.tax_cents, r.extras_cents, r.total_cents, r.paid_cents,
+		       r.company_id
+		FROM reservations r
+		JOIN customers cu ON cu.id=r.customer_id
+		JOIN companies co ON co.id=r.company_id
+		LEFT JOIN vehicles v ON v.id=r.vehicle_id
+		WHERE r.id=$1 AND cu.user_id=$2
+	`, id, s.UserID).Scan(&v.ID, &v.BookingNumber, &v.Status, &v.PickupAt, &v.ReturnAt,
+		&v.Vehicle, &v.CompanyName, &v.SubtotalCents, &v.TaxCents, &v.ExtrasCents,
+		&v.TotalCents, &v.PaidCents, &v.CompanyID)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	// Invoices for this reservation with their public tokens.
+	type invLink struct {
+		ID          uuid.UUID
+		Kind        string
+		Number      string
+		Status      string
+		TotalCents  int
+		PublicToken string
+		IssuedAt    *time.Time
+	}
+	invs := []invLink{}
+	irows, _ := h.Pool.Query(r.Context(), `
+		SELECT id, kind, number, status, total_cents, public_token, issued_at
+		FROM invoices WHERE company_id=$1 AND reservation_id=$2
+		ORDER BY CASE kind WHEN 'pre' THEN 0 ELSE 1 END
+	`, v.CompanyID, v.ID)
+	if irows != nil {
+		for irows.Next() {
+			var i invLink
+			if err := irows.Scan(&i.ID, &i.Kind, &i.Number, &i.Status, &i.TotalCents, &i.PublicToken, &i.IssuedAt); err == nil {
+				invs = append(invs, i)
+			}
+		}
+		irows.Close()
+	}
+	tolls := h.TollsForReservation(r, v.CompanyID, v.ID)
+	tollsTotal := 0
+	for _, t := range tolls {
+		tollsTotal += t.TotalCents
+	}
+	grand := v.TotalCents + tollsTotal
+	balance := grand - v.PaidCents
+	if balance < 0 {
+		balance = 0
+	}
+	h.render(w, r, "public/portal_reservation.html", "Booking "+v.BookingNumber, "", map[string]any{
+		"R":          v,
+		"Invoices":   invs,
+		"Tolls":      tolls,
+		"TollsTotal": tollsTotal,
+		"GrandTotal": grand,
+		"Balance":    balance,
+	})
+}
+
 // Public photo-upload page.
 type uploadInfo struct {
 	Kind, BookingNumber, Vehicle, Customer string
@@ -960,11 +1045,19 @@ func (h *Handler) ReservationDetailPage(w http.ResponseWriter, r *http.Request) 
 	}
 	invs := h.invoicesForReservation(r.Context(), cid, d.ID)
 	pre, post := h.InspectionsForReservation(r, d.ID)
+	tolls := h.TollsForReservation(r, cid, d.ID)
+	var tollsTotal int
+	for _, t := range tolls {
+		tollsTotal += t.TotalCents
+	}
 	h.render(w, r, "admin/reservation_detail.html", "Booking "+d.BookingNumber, "reservations", map[string]any{
 		"R": d, "History": history, "Invoices": invs,
 		"Pre": pre, "Post": post,
-		"Flash":     r.URL.Query().Get("flash"),
-		"PhotoLink": r.URL.Query().Get("link"),
+		"Tolls":      tolls,
+		"TollsTotal": tollsTotal,
+		"Flash":      r.URL.Query().Get("flash"),
+		"PhotoLink":  r.URL.Query().Get("link"),
+		"Err":        r.URL.Query().Get("err"),
 	})
 }
 

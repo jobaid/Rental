@@ -1,0 +1,110 @@
+{{define "content"}}
+<style>
+  .pr-wrap { max-width:960px; margin:0 auto; padding:16px; }
+  .pr-hero { background:linear-gradient(135deg,#0f766e,#14b8a6); color:#fff; padding:22px 24px; border-radius:14px; margin-bottom:16px; }
+  .pr-hero h1 { margin:0 0 4px; font-size:22px; }
+  .pr-hero .chip { display:inline-block; background:rgba(255,255,255,.18); padding:3px 10px; border-radius:999px; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; margin-right:6px; }
+  .pr-grid { display:grid; grid-template-columns:2fr 1fr; gap:16px; }
+  @media (max-width:760px){ .pr-grid { grid-template-columns:1fr; } }
+  .card h3 { margin-top:0; font-size:15px; }
+  .mini { font-size:12.5px; }
+  .pill { display:inline-block; padding:2px 10px; border-radius:999px; font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; }
+  .pill.paid { background:#dcfce7; color:#166534; }
+  .pill.sent, .pill.issued { background:#fef3c7; color:#92400e; }
+  .pill.draft { background:#eceff3; color:#4a515a; }
+  .pill.void { background:#fee2e2; color:#8a1b1b; }
+  .totals { display:grid; grid-template-columns:1fr auto; gap:4px 24px; font-variant-numeric:tabular-nums; font-size:14px; }
+  .totals .grand { font-size:18px; font-weight:800; border-top:2px solid #0a0a0a; padding-top:8px; margin-top:6px; }
+</style>
+
+<div class="pr-wrap">
+  <div class="pr-hero">
+    <div><span class="chip">Booking</span><span class="chip">{{ .R.Status }}</span></div>
+    <h1>{{ .R.BookingNumber }} · {{ .R.Vehicle }}</h1>
+    <div style="font-size:13.5px; opacity:.92;">
+      {{ .R.PickupAt.Format "Mon 02 Jan · 15:04" }} &nbsp;→&nbsp; {{ .R.ReturnAt.Format "Mon 02 Jan · 15:04" }}<br>
+      {{ .R.CompanyName }}
+    </div>
+  </div>
+
+  <div class="pr-grid">
+    <div>
+      <!-- INVOICES -->
+      <div class="card">
+        <h3>Invoices</h3>
+        {{ if .Invoices }}
+        <table class="mini">
+          <thead><tr><th>Type</th><th>Number</th><th>Status</th><th style="text-align:right;">Total</th><th></th></tr></thead>
+          <tbody>
+            {{ range .Invoices }}
+            <tr>
+              <td>{{ if eq .Kind "pre" }}Pre-rental{{ else }}Final{{ end }}</td>
+              <td style="font-family:monospace;">{{ .Number }}</td>
+              <td><span class="pill {{ .Status }}">{{ .Status }}</span></td>
+              <td style="text-align:right;"><strong>${{ dollars .TotalCents }}</strong></td>
+              <td style="text-align:right;">
+                <a href="/invoices/{{ .PublicToken }}" target="_blank" class="btn secondary" style="font-size:12px; padding:4px 10px;">View</a>
+              </td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+        {{ else }}
+        <p class="muted mini">No invoices have been issued for this booking yet.</p>
+        {{ end }}
+      </div>
+
+      <!-- TOLLS -->
+      {{ if .Tolls }}
+      <div class="card" style="margin-top:14px;">
+        <h3>Toll charges</h3>
+        <p class="muted mini" style="margin-top:0;">Tolls that occurred while you were driving this vehicle. Some may arrive days after your return, which is normal.</p>
+        <table class="mini">
+          <thead><tr><th>When</th><th>Location</th><th style="text-align:right;">Toll</th><th style="text-align:right;">Admin fee</th><th style="text-align:right;">Total</th></tr></thead>
+          <tbody>
+            {{ range .Tolls }}
+            <tr>
+              <td class="muted">{{ .TransactionAt.Format "02 Jan 15:04" }}</td>
+              <td>
+                {{ or (deref .Location) "—" }}
+                {{ if or (deref .EntryPlaza) (deref .ExitPlaza) }}
+                <div class="muted" style="font-size:11px;">{{ deref .EntryPlaza }}{{ if and (deref .EntryPlaza) (deref .ExitPlaza) }} → {{ end }}{{ deref .ExitPlaza }}</div>
+                {{ end }}
+              </td>
+              <td style="text-align:right;">${{ dollars .AmountCents }}</td>
+              <td style="text-align:right;">${{ dollars .AdminFeeCents }}</td>
+              <td style="text-align:right;"><strong>${{ dollars .TotalCents }}</strong></td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
+      {{ end }}
+    </div>
+
+    <!-- FINAL TOTALS -->
+    <div>
+      <div class="card">
+        <h3>Final invoice</h3>
+        <div class="totals">
+          <span class="muted">Rental subtotal</span><span>${{ dollars .R.SubtotalCents }}</span>
+          {{ if gt .R.ExtrasCents 0 }}<span class="muted">Extras</span><span>${{ dollars .R.ExtrasCents }}</span>{{ end }}
+          {{ if gt .R.TaxCents 0 }}<span class="muted">Tax</span><span>${{ dollars .R.TaxCents }}</span>{{ end }}
+          {{ if gt .TollsTotal 0 }}<span class="muted">Tolls</span><span>${{ dollars .TollsTotal }}</span>{{ end }}
+          <span class="grand">Total</span><span class="grand">${{ dollars .GrandTotal }}</span>
+          <span class="muted">Paid</span><span>${{ dollars .R.PaidCents }}</span>
+          <span class="muted"><strong>Balance</strong></span><span><strong>${{ dollars .Balance }}</strong></span>
+        </div>
+        <p class="muted mini" style="margin-top:12px;">The totals here include every rental charge and every toll attached to this booking, even the ones that arrived after your return.</p>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <h3>Need help?</h3>
+        <p class="muted mini">Questions about a charge? <a href="/contact">Reach out</a> and quote booking <strong>{{ .R.BookingNumber }}</strong>.</p>
+      </div>
+    </div>
+  </div>
+
+  <p style="margin-top:20px;"><a href="/portal">← All my bookings</a></p>
+</div>
+{{end}}

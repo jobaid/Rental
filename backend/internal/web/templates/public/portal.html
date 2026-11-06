@@ -6,7 +6,7 @@
   </div>
   <div class="card" style="padding:0;">
     <table>
-      <thead><tr><th>Booking</th><th>Vehicle</th><th>Pickup</th><th>Return</th><th>Total</th><th>Status</th></tr></thead>
+      <thead><tr><th>Booking</th><th>Vehicle</th><th>Pickup</th><th>Return</th><th>Total</th><th>Status</th><th></th></tr></thead>
       <tbody>
         {{ range .Bookings }}
         <tr>
@@ -16,9 +16,10 @@
           <td class="muted">{{ fmtTime .ReturnAt }}</td>
           <td>${{ dollars .TotalCents }}</td>
           <td><span class="badge {{ statusClass .Status }}">{{ .Status }}</span></td>
+          <td><a href="/portal/reservations/{{ .ID }}" class="btn secondary small">View final invoice</a></td>
         </tr>
         {{ else }}
-        <tr><td colspan="6" class="muted" style="text-align:center; padding: 40px;">No bookings yet.</td></tr>
+        <tr><td colspan="7" class="muted" style="text-align:center; padding: 40px;">No bookings yet.</td></tr>
         {{ end }}
       </tbody>
     </table>

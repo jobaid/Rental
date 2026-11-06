@@ -141,6 +141,7 @@ func Load() (*Templates, error) {
 		{"public/confirm.html",         "templates/public/confirm.html",         "templates/layouts/public.html"},
 		{"public/portal_login.html",    "templates/public/portal_login.html",    "templates/layouts/public.html"},
 		{"public/portal.html",          "templates/public/portal.html",          "templates/layouts/public.html"},
+		{"public/portal_reservation.html","templates/public/portal_reservation.html","templates/layouts/public.html"},
 		{"public/upload.html",          "templates/public/upload.html",          "templates/layouts/public.html"},
 		{"public/about.html",           "templates/public/about.html",           "templates/layouts/public.html"},
 		{"public/contact.html",         "templates/public/contact.html",         "templates/layouts/public.html"},

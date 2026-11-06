@@ -96,6 +96,7 @@ func main() {
 	r.Group(func(r chi.Router) {
 		r.Use(webui.RequireCustomer)
 		r.Get("/portal", web.Portal)
+		r.Get("/portal/reservations/{id}", web.PortalReservation)
 	})
 	r.Get("/upload/{token}", web.UploadGet)
 	r.Post("/upload/{token}", web.UploadPost)
@@ -143,6 +144,7 @@ func main() {
 		r.Post("/admin/reservations/{id}/photo-link", web.ReservationPhotoLink)
 		r.Post("/admin/reservations/{id}/fleet-link", web.ReservationFleetLink)
 		r.Post("/admin/reservations/{id}/open-thread", web.OpenThreadForReservation)
+		r.Post("/admin/reservations/{id}/tolls", web.ReservationTollAdd)
 		r.Get("/admin/reservations/{id}/agreement.pdf", web.AdminAgreementPDF)
 		r.Get("/admin/reservations/{id}/invoice.pdf", web.AdminInvoicePDF)
 

@@ -723,6 +723,106 @@ func (h *Handler) importTollCSV(r *http.Request, cid uuid.UUID, acc *TollAccount
 }
 
 // =============================================================================
+// Manual toll — used from the reservation detail page to add a late-arriving
+// charge after the vehicle has already been returned.
+// =============================================================================
+
+// ReservationTollAdd inserts a toll_transactions row pre-attached to the given
+// reservation. No provider file needed — this is the manager typing it in.
+func (h *Handler) ReservationTollAdd(w http.ResponseWriter, r *http.Request) {
+	s, _ := From(r)
+	cid := *s.CompanyID
+	rid := chi.URLParam(r, "id")
+	_ = r.ParseForm()
+
+	location := strings.TrimSpace(r.FormValue("location"))
+	whenStr := strings.TrimSpace(r.FormValue("transactionAt"))
+	if whenStr == "" {
+		whenStr = time.Now().Format("2006-01-02T15:04")
+	}
+	when, err := parseLocal(whenStr)
+	if err != nil {
+		http.Redirect(w, r, "/admin/reservations/"+rid+"?err=Invalid+date#tolls", http.StatusSeeOther)
+		return
+	}
+	amount := parseDollarsOrCents(r.FormValue("amountDollars"), r.FormValue("amountCents"))
+	adminFee := parseDollarsOrCents(r.FormValue("adminFeeDollars"), r.FormValue("adminFeeCents"))
+	if amount <= 0 {
+		http.Redirect(w, r, "/admin/reservations/"+rid+"?err=Amount+required#tolls", http.StatusSeeOther)
+		return
+	}
+
+	// Look up the reservation's vehicle + customer for proper attribution.
+	var vehicleID, customerID uuid.UUID
+	if err := h.Pool.QueryRow(r.Context(),
+		`SELECT vehicle_id, customer_id FROM reservations WHERE company_id=$1 AND id=$2`,
+		cid, rid).Scan(&vehicleID, &customerID); err != nil {
+		http.Redirect(w, r, "/admin/reservations/"+rid+"?err=Reservation+not+found#tolls", http.StatusSeeOther)
+		return
+	}
+
+	// Fall back to the account's default admin fee if the manager left it blank.
+	if adminFee == 0 {
+		if acc, _ := h.ensureTollAccount(r, cid); acc != nil {
+			adminFee = acc.AdminFeeCents
+		}
+	}
+
+	// Synthesize a stable provider_transaction_id for the manual row so
+	// re-posting an identical form doesn't create a duplicate.
+	providerTxID := fmt.Sprintf("manual|%s|%d|%s", rid, amount, when.UTC().Format("20060102T150405"))
+
+	_, err = h.Pool.Exec(r.Context(), `
+		INSERT INTO toll_transactions
+		  (company_id, provider, provider_transaction_id, vehicle_id, reservation_id, customer_id,
+		   toll_location, transaction_at, amount_cents, admin_fee_cents, match_status, billing_status, verified_at, verified_by)
+		VALUES ($1,'manual',$2,$3,$4::uuid,$5,NULLIF($6,''),$7,$8,$9,'matched','unbilled',NOW(),$10)
+		ON CONFLICT (company_id, provider, provider_transaction_id) DO NOTHING
+	`, cid, providerTxID, vehicleID, rid, customerID, location, when, amount, adminFee, s.UserID)
+	if err != nil {
+		http.Redirect(w, r, "/admin/reservations/"+rid+"?err="+err.Error()+"#tolls", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/admin/reservations/"+rid+"?flash=Toll+added#tolls", http.StatusSeeOther)
+}
+
+// TollsForReservation returns every toll transaction tied to a reservation
+// (used by both admin and customer views). Ordered oldest-first.
+func (h *Handler) TollsForReservation(r *http.Request, cid, rid uuid.UUID) []TollTx {
+	rows, err := h.Pool.Query(r.Context(), `
+		SELECT tt.id, tt.provider_transaction_id, tt.provider, tt.transponder_ref,
+		       COALESCE(tp.transponder_id, tt.transponder_ref, ''),
+		       '', '', '',
+		       tt.license_plate, tt.toll_location, tt.entry_plaza, tt.exit_plaza,
+		       tt.transaction_at, tt.amount_cents, tt.admin_fee_cents,
+		       tt.match_status, tt.billing_status,
+		       tt.reservation_id, tt.vehicle_id
+		FROM toll_transactions tt
+		LEFT JOIN toll_transponders tp ON tp.id=tt.transponder_id
+		WHERE tt.company_id=$1 AND tt.reservation_id=$2 AND tt.match_status<>'excluded'
+		ORDER BY tt.transaction_at ASC
+	`, cid, rid)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	out := []TollTx{}
+	for rows.Next() {
+		var t TollTx
+		if err := rows.Scan(&t.ID, &t.ProviderTxID, &t.Provider, &t.TransponderRef,
+			&t.TransponderLabel, &t.VehicleLabel, &t.ReservationNo, &t.CustomerName,
+			&t.LicensePlate, &t.Location, &t.EntryPlaza, &t.ExitPlaza,
+			&t.TransactionAt, &t.AmountCents, &t.AdminFeeCents,
+			&t.MatchStatus, &t.BillingStatus, &t.ReservationID, &t.VehicleID); err != nil {
+			continue
+		}
+		t.TotalCents = t.AmountCents + t.AdminFeeCents
+		out = append(out, t)
+	}
+	return out
+}
+
+// =============================================================================
 // Matching engine
 // =============================================================================
 
