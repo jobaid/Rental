@@ -1,0 +1,118 @@
+{{define "content"}}
+<style>
+  .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:10.5px; letter-spacing:.5px; text-transform:uppercase; font-weight:700; }
+  .pill.pending { background:#eceff3; color:#4a515a; }
+  .pill.matched { background:#dcfce7; color:#166534; }
+  .pill.needs_review { background:#fef3c7; color:#92400e; }
+  .pill.company_expense { background:#dbeafe; color:#1e40af; }
+  .pill.excluded { background:#fee2e2; color:#8a1b1b; }
+  .pill.unbilled { background:#eceff3; color:#4a515a; }
+  .pill.invoiced { background:#e3edff; color:#0d3a99; }
+  .pill.paid { background:#dcfce7; color:#166534; }
+  .pill.disputed { background:#fee2e2; color:#8a1b1b; }
+  .action-row { display:flex; gap:4px; flex-wrap:wrap; }
+  .action-row form { display:inline; }
+  .action-row button { font-size:11px; padding:3px 8px; }
+  details.reassign { display:inline; }
+  details.reassign summary { cursor:pointer; font-size:11px; padding:3px 8px; border:1px solid var(--border); border-radius:6px; }
+  details.reassign .form { margin-top:4px; padding:8px; background:var(--surface); border:1px solid var(--border); border-radius:6px; display:flex; gap:4px; }
+  details.reassign input { font-size:11px; padding:3px 6px; }
+</style>
+
+<div class="flex-between" style="margin-bottom:14px;">
+  <h2 style="margin:0;">Toll transactions</h2>
+  <div class="flex" style="gap:8px;">
+    <a href="/admin/tolls" class="btn secondary">Dashboard</a>
+    <a href="/admin/tolls/import" class="btn">Import</a>
+  </div>
+</div>
+
+{{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
+{{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+
+<form method="get" class="card" style="padding:12px; margin-bottom:14px; display:grid; grid-template-columns:1fr 1fr 2fr auto; gap:8px;">
+  <div>
+    <label>Match</label>
+    <select name="match">
+      <option value="">any</option>
+      {{ range $v := slice "matched" "needs_review" "pending" "company_expense" "excluded" }}
+      <option value="{{ $v }}" {{ if eq $v $.FilterMatch }}selected{{ end }}>{{ $v }}</option>
+      {{ end }}
+    </select>
+  </div>
+  <div>
+    <label>Billing</label>
+    <select name="billing">
+      <option value="">any</option>
+      {{ range $v := slice "unbilled" "invoiced" "paid" "disputed" "waived" }}
+      <option value="{{ $v }}" {{ if eq $v $.FilterBilling }}selected{{ end }}>{{ $v }}</option>
+      {{ end }}
+    </select>
+  </div>
+  <div>
+    <label>Search (tag, plate, plaza, booking #)</label>
+    <input name="q" value="{{ .FilterQuery }}">
+  </div>
+  <div style="display:flex; align-items:flex-end;"><button>Filter</button></div>
+</form>
+
+<div class="card" style="padding:0;">
+<table>
+  <thead>
+    <tr>
+      <th>Date</th><th>Plaza / Lane</th><th>Tag</th><th>Plate</th><th>Vehicle</th>
+      <th>Reservation</th><th>Customer</th>
+      <th style="text-align:right;">Toll</th><th style="text-align:right;">Admin</th><th style="text-align:right;">Total</th>
+      <th>Match</th><th>Billing</th><th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{ range .Transactions }}
+    <tr>
+      <td class="muted" style="white-space:nowrap;">{{ .TransactionAt.Format "02 Jan 15:04" }}</td>
+      <td>
+        {{ with .Location }}{{ . }}{{ end }}
+        {{ if or .EntryPlaza .ExitPlaza }}
+        <div class="muted" style="font-size:11px;">
+          {{ with .EntryPlaza }}{{ . }}{{ end }}{{ if and .EntryPlaza .ExitPlaza }} → {{ end }}{{ with .ExitPlaza }}{{ . }}{{ end }}
+        </div>
+        {{ end }}
+      </td>
+      <td style="font-family:monospace; font-size:12px;">{{ or .TransponderLabel "—" }}</td>
+      <td style="font-family:monospace; font-size:12px;">{{ or (deref .LicensePlate) "—" }}</td>
+      <td>{{ or .VehicleLabel "—" }}</td>
+      <td>{{ if .ReservationNo }}<a href="/admin/reservations/{{ .ReservationID }}">{{ .ReservationNo }}</a>{{ else }}<span class="muted">—</span>{{ end }}</td>
+      <td class="muted">{{ or .CustomerName "—" }}</td>
+      <td style="text-align:right;">${{ dollars .AmountCents }}</td>
+      <td style="text-align:right;">${{ dollars .AdminFeeCents }}</td>
+      <td style="text-align:right;"><strong>${{ dollars .TotalCents }}</strong></td>
+      <td><span class="pill {{ .MatchStatus }}">{{ .MatchStatus }}</span></td>
+      <td><span class="pill {{ .BillingStatus }}">{{ .BillingStatus }}</span></td>
+      <td>
+        <div class="action-row">
+          <form method="post" action="/admin/tolls/transactions/{{ .ID }}/rematch"><button class="ghost" title="Re-run matching">↻</button></form>
+          <form method="post" action="/admin/tolls/transactions/{{ .ID }}/company-expense"><button class="ghost" title="Mark as company expense">Co.</button></form>
+          <details class="reassign">
+            <summary>Reassign</summary>
+            <form class="form" method="post" action="/admin/tolls/transactions/{{ .ID }}/reassign">
+              <input name="reservationId" placeholder="Reservation UUID" required>
+              <button>OK</button>
+            </form>
+          </details>
+          <details class="reassign">
+            <summary style="color:#8a1b1b;">Exclude</summary>
+            <form class="form" method="post" action="/admin/tolls/transactions/{{ .ID }}/exclude">
+              <input name="reason" placeholder="Reason" required>
+              <button>OK</button>
+            </form>
+          </details>
+        </div>
+      </td>
+    </tr>
+    {{ else }}
+    <tr><td colspan="13" class="muted" style="text-align:center; padding:30px;">No transactions match the filters.</td></tr>
+    {{ end }}
+  </tbody>
+</table>
+</div>
+{{end}}

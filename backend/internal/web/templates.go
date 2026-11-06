@@ -23,6 +23,7 @@ var funcs = template.FuncMap{
 	"sub":          func(a, b int) int { if r := a - b; r > 0 { return r }; return 0 },
 	"add1":         func(a int) int { return a + 1 },
 	"divf":         func(a int, b float64) float64 { return float64(a) / b },
+	"slice":        func(s ...string) []string { return s },
 	"dict": func(values ...any) (map[string]any, error) {
 		if len(values)%2 != 0 { return nil, fmt.Errorf("dict needs even args") }
 		m := map[string]any{}
@@ -172,6 +173,11 @@ func Load() (*Templates, error) {
 		{"admin/reports.html",          "templates/admin/reports.html",          "templates/layouts/admin.html"},
 		{"admin/settings.html",         "templates/admin/settings.html",         "templates/layouts/admin.html"},
 		{"admin/invoice_edit.html",     "templates/admin/invoice_edit.html",     "templates/layouts/admin.html"},
+		{"admin/tolls_dashboard.html",  "templates/admin/tolls_dashboard.html",  "templates/layouts/admin.html"},
+		{"admin/tolls_transactions.html","templates/admin/tolls_transactions.html","templates/layouts/admin.html"},
+		{"admin/tolls_import.html",     "templates/admin/tolls_import.html",     "templates/layouts/admin.html"},
+		{"admin/tolls_account.html",    "templates/admin/tolls_account.html",    "templates/layouts/admin.html"},
+		{"admin/transponders.html",     "templates/admin/transponders.html",     "templates/layouts/admin.html"},
 		{"admin/comms.html",            "templates/admin/comms.html",            "templates/layouts/admin.html"},
 		{"admin/comms_templates.html",  "templates/admin/comms_templates.html",  "templates/layouts/admin.html"},
 		{"admin/comms_rules.html",      "templates/admin/comms_rules.html",      "templates/layouts/admin.html"},

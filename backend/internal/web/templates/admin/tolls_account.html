@@ -1,0 +1,59 @@
+{{define "content"}}
+<div class="flex-between" style="margin-bottom:14px;">
+  <h2 style="margin:0;">Toll account</h2>
+  <a href="/admin/tolls" class="btn secondary">← Dashboard</a>
+</div>
+
+{{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
+{{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+
+<div class="row">
+  <div class="card">
+    <h3 style="margin-top:0;">E-ZPass Virginia</h3>
+    <p class="muted" style="font-size:13px;">
+      E-ZPass Virginia does not publish a customer-facing API. Import transaction
+      statements as CSV from the Business portal; the system handles matching,
+      duplicate prevention, and attribution to the rental active at the time.
+    </p>
+    <form method="post" action="/admin/tolls/account">
+      <label>Account reference</label>
+      <input name="accountReference" value="{{ or (deref .Account.AccountReference) "" }}" placeholder="E-ZPass account # (for your records)">
+      <label>Admin fee per transaction (USD)</label>
+      <input type="number" step="0.01" min="0" name="adminFeeDollars" value="{{ printf "%.2f" (divf .Account.AdminFeeCents 100.0) }}">
+      <small class="muted">Added on top of the toll amount when generating a customer invoice.</small>
+      <div style="margin-top:12px; display:flex; gap:10px; align-items:center;">
+        <button type="submit">Save</button>
+        <a href="/admin/tolls/import" class="btn secondary">Upload CSV</a>
+      </div>
+    </form>
+    <div style="margin-top:16px; padding:12px; background:var(--surface); border-radius:8px; font-size:13px;">
+      <strong>Status:</strong> <span class="muted">{{ .Account.ConnectionStatus }}</span><br>
+      <strong>Last sync:</strong> <span class="muted">{{ if .Account.LastSyncAt }}{{ .Account.LastSyncAt.Format "02 Jan 2006 · 15:04" }}{{ else }}never{{ end }}</span>
+      {{ if deref .Account.LastSyncError }}<br><strong style="color:#b91c1c;">Last error:</strong> <span style="font-size:12px;">{{ deref .Account.LastSyncError }}</span>{{ end }}
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Recent imports</h3>
+    {{ if .Imports }}
+    <table style="font-size:12.5px;">
+      <thead><tr><th>When</th><th>File</th><th>Rows</th><th>New</th><th>Dup</th><th>Err</th></tr></thead>
+      <tbody>
+        {{ range .Imports }}
+        <tr>
+          <td class="muted">{{ .CreatedAt.Format "02 Jan 15:04" }}</td>
+          <td>{{ .Filename }}</td>
+          <td>{{ .Total }}</td>
+          <td><strong>{{ .Inserted }}</strong></td>
+          <td class="muted">{{ .Dup }}</td>
+          <td style="color:{{ if gt .ErrorCount 0 }}#b91c1c{{ else }}#64748b{{ end }};">{{ .ErrorCount }}</td>
+        </tr>
+        {{ end }}
+      </tbody>
+    </table>
+    {{ else }}
+    <p class="muted" style="font-size:13px;">No imports yet. <a href="/admin/tolls/import">Upload your first CSV.</a></p>
+    {{ end }}
+  </div>
+</div>
+{{end}}

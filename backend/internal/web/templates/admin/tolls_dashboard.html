@@ -1,0 +1,87 @@
+{{define "content"}}
+<style>
+  .toll-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+  .toll-head h2 { margin:0; font-size:22px; }
+  .toll-head .actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .toll-kpi { display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:12px; margin-bottom:20px; }
+  .toll-kpi .k { background:#fff; border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:10px; padding:12px 14px; }
+  .toll-kpi .k.warn { border-left-color:#f59e0b; }
+  .toll-kpi .k.danger { border-left-color:#dc2626; }
+  .toll-kpi .k.ok { border-left-color:#10b981; }
+  .toll-kpi .lbl { font-size:11px; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; margin-bottom:4px; }
+  .toll-kpi .num { font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:10.5px; letter-spacing:.5px; text-transform:uppercase; font-weight:700; }
+  .pill.pending { background:#eceff3; color:#4a515a; }
+  .pill.matched { background:#dcfce7; color:#166534; }
+  .pill.needs_review { background:#fef3c7; color:#92400e; }
+  .pill.company_expense { background:#dbeafe; color:#1e40af; }
+  .pill.excluded { background:#fee2e2; color:#8a1b1b; }
+  .pill.unbilled { background:#eceff3; color:#4a515a; }
+  .pill.invoiced { background:#e3edff; color:#0d3a99; }
+  .pill.paid { background:#dcfce7; color:#166534; }
+  .pill.disputed { background:#fee2e2; color:#8a1b1b; }
+</style>
+
+<div class="toll-head">
+  <div>
+    <h2>Toll dashboard</h2>
+    <div class="muted" style="font-size:13px;">E-ZPass Virginia</div>
+  </div>
+  <div class="actions">
+    <a href="/admin/tolls/import" class="btn">⬆ Import toll CSV</a>
+    <a href="/admin/tolls/transactions" class="btn secondary">All transactions</a>
+    <a href="/admin/transponders" class="btn secondary">Transponders</a>
+    <a href="/admin/tolls/account" class="btn secondary">Account settings</a>
+  </div>
+</div>
+
+<div class="toll-kpi">
+  <div class="k"><div class="lbl">Total transactions</div><div class="num">{{ .KPI.total_tx }}</div></div>
+  <div class="k"><div class="lbl">Gross charges</div><div class="num">${{ dollars .KPI.total_amount }}</div></div>
+  <div class="k warn"><div class="lbl">Unmatched</div><div class="num">{{ .KPI.unmatched }}</div></div>
+  <div class="k warn"><div class="lbl">Unbilled</div><div class="num">{{ .KPI.unbilled }}</div></div>
+  <div class="k"><div class="lbl">Awaiting billing ($)</div><div class="num">${{ dollars .KPI.unbilled_amount }}</div></div>
+  <div class="k"><div class="lbl">Invoiced</div><div class="num">{{ .KPI.invoiced }}</div></div>
+  <div class="k ok"><div class="lbl">Paid</div><div class="num">{{ .KPI.paid_count }}</div></div>
+  <div class="k"><div class="lbl">Company expense</div><div class="num">{{ .KPI.company_expense }}</div></div>
+</div>
+
+<div class="card" style="padding:0;">
+  <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+    <strong>Most recent toll transactions</strong>
+    <a href="/admin/tolls/transactions" style="font-size:13px;">See all →</a>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th><th>Plaza / Lane</th><th>Transponder</th><th>Vehicle</th><th>Reservation</th><th>Customer</th>
+        <th style="text-align:right;">Amount</th><th>Match</th><th>Billing</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{ range .Recent }}
+      <tr>
+        <td class="muted">{{ .TransactionAt.Format "02 Jan 15:04" }}</td>
+        <td>
+          {{ with .Location }}{{ . }}{{ end }}
+          {{ if or .EntryPlaza .ExitPlaza }}
+          <div class="muted" style="font-size:11px;">
+            {{ with .EntryPlaza }}{{ . }}{{ end }}{{ if and .EntryPlaza .ExitPlaza }} → {{ end }}{{ with .ExitPlaza }}{{ . }}{{ end }}
+          </div>
+          {{ end }}
+        </td>
+        <td style="font-family:monospace; font-size:12.5px;">{{ or .TransponderLabel "—" }}</td>
+        <td>{{ or .VehicleLabel "—" }}</td>
+        <td>{{ if .ReservationNo }}<a href="/admin/reservations/{{ .ReservationID }}">{{ .ReservationNo }}</a>{{ else }}—{{ end }}</td>
+        <td class="muted">{{ or .CustomerName "—" }}</td>
+        <td style="text-align:right;">${{ dollars .TotalCents }}</td>
+        <td><span class="pill {{ .MatchStatus }}">{{ .MatchStatus }}</span></td>
+        <td><span class="pill {{ .BillingStatus }}">{{ .BillingStatus }}</span></td>
+      </tr>
+      {{ else }}
+      <tr><td colspan="9" class="muted" style="text-align:center; padding:30px;">No toll transactions yet. <a href="/admin/tolls/import">Import a CSV</a> to get started.</td></tr>
+      {{ end }}
+    </tbody>
+  </table>
+</div>
+{{end}}

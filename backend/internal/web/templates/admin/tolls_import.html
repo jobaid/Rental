@@ -1,0 +1,43 @@
+{{define "content"}}
+<div class="flex-between" style="margin-bottom:14px;">
+  <h2 style="margin:0;">Import toll transactions</h2>
+  <a href="/admin/tolls" class="btn secondary">← Dashboard</a>
+</div>
+
+{{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
+{{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+
+<div class="row">
+  <div class="card">
+    <h3 style="margin-top:0;">Upload E-ZPass CSV</h3>
+    <p class="muted" style="font-size:13px;">
+      Export the transaction statement from the E-ZPass Virginia Business portal as CSV
+      (or Excel saved as CSV) and upload it here. Re-uploading the same file is safe —
+      duplicate transactions are skipped automatically.
+    </p>
+    <form method="post" action="/admin/tolls/import" enctype="multipart/form-data">
+      <label>Statement file (CSV)</label>
+      <input type="file" name="file" accept=".csv,text/csv" required>
+      <button type="submit" style="margin-top:12px;">Upload &amp; import</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Supported columns</h3>
+    <p class="muted" style="font-size:13px; margin-top:0;">The importer looks for these column names (case-insensitive). At least a date/time and amount are required; a transponder tag number is strongly recommended for automatic matching.</p>
+    <table style="font-size:12.5px;">
+      <thead><tr><th>What we're looking for</th><th>Column aliases</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Date/Time</strong></td><td class="muted">Transaction Date/Time · Date + Time · Posted On</td></tr>
+        <tr><td><strong>Amount</strong></td><td class="muted">Amount · Toll Amount · Amount ($) · Fare</td></tr>
+        <tr><td><strong>Tag number</strong></td><td class="muted">Transponder · Tag Number · Tag # · Device</td></tr>
+        <tr><td>Plate</td><td class="muted">License Plate · Plate</td></tr>
+        <tr><td>Plaza</td><td class="muted">Plaza · Toll Plaza · Location · Facility</td></tr>
+        <tr><td>Entry Plaza</td><td class="muted">Entry Plaza · Entry · Entry Point</td></tr>
+        <tr><td>Exit Plaza</td><td class="muted">Exit Plaza · Exit · Exit Point</td></tr>
+        <tr><td>Transaction ID</td><td class="muted">Transaction ID · Trans ID · Record ID (synthesized if absent)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{{end}}

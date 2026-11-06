@@ -59,6 +59,17 @@
       {{ sideIcon "people" }}<span>Users &amp; access</span>
     </a>
 
+    <h4>Tolls</h4>
+    <a href="/admin/tolls" class="{{ if eq .Active "tolls" }}active{{ end }}">
+      {{ sideIcon "chart" }}<span>Toll dashboard</span>
+    </a>
+    <a href="/admin/tolls/transactions" class="{{ if eq .Active "tolls-tx" }}active{{ end }}">
+      {{ sideIcon "list" }}<span>Toll transactions</span>
+    </a>
+    <a href="/admin/transponders" class="{{ if eq .Active "transponders" }}active{{ end }}">
+      {{ sideIcon "id" }}<span>Transponders</span>
+    </a>
+
     <h4>Business</h4>
     <a href="/admin/reports" class="{{ if eq .Active "reports" }}active{{ end }}">
       {{ sideIcon "chart" }}<span>Reports</span>

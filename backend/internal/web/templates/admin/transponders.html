@@ -1,0 +1,84 @@
+{{define "content"}}
+<style>
+  .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:10.5px; letter-spacing:.5px; text-transform:uppercase; font-weight:700; }
+  .pill.active { background:#dcfce7; color:#166534; }
+  .pill.inactive { background:#eceff3; color:#4a515a; }
+  .pill.lost { background:#fee2e2; color:#8a1b1b; }
+  .pill.damaged { background:#fef3c7; color:#92400e; }
+  .pill.under_replacement { background:#dbeafe; color:#1e40af; }
+</style>
+
+<div class="flex-between" style="margin-bottom:14px;">
+  <h2 style="margin:0;">Transponders</h2>
+  <a href="/admin/tolls" class="btn secondary">← Toll dashboard</a>
+</div>
+
+{{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
+{{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+
+<div class="row">
+  <div class="card" style="padding:0;">
+    <div style="padding:12px 16px; border-bottom:1px solid var(--border);"><strong>All transponders</strong></div>
+    <table>
+      <thead><tr><th>Tag #</th><th>Serial</th><th>Status</th><th>Assigned to</th><th>Since</th><th>Actions</th></tr></thead>
+      <tbody>
+      {{ range .Transponders }}
+      <tr>
+        <td style="font-family:monospace;">{{ .TransponderID }}</td>
+        <td class="muted">{{ or (deref .SerialNumber) "—" }}</td>
+        <td><span class="pill {{ .Status }}">{{ .Status }}</span></td>
+        <td>{{ or (deref .VehicleLabel) "unassigned" }}</td>
+        <td class="muted" style="font-size:12px;">{{ if .AssignedAt }}{{ .AssignedAt.Format "02 Jan 2006" }}{{ else }}—{{ end }}</td>
+        <td>
+          <details>
+            <summary style="cursor:pointer; font-size:12px;">Actions</summary>
+            <div style="padding:8px; background:var(--surface); border:1px solid var(--border); border-radius:6px; margin-top:4px; min-width:250px;">
+              <form method="post" action="/admin/transponders/{{ .ID }}/assign" style="margin-bottom:6px;">
+                <label style="font-size:11px;">Reassign to vehicle</label>
+                <select name="vehicleId" style="font-size:12px;">
+                  <option value="">— unassign —</option>
+                  {{ range $.Vehicles }}<option value="{{ .ID }}">{{ .Label }}</option>{{ end }}
+                </select>
+                <button style="font-size:11px; margin-top:4px;">Save</button>
+              </form>
+              <form method="post" action="/admin/transponders/{{ .ID }}/status">
+                <label style="font-size:11px;">Device status</label>
+                <select name="status" style="font-size:12px;">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="lost">Lost</option>
+                  <option value="damaged">Damaged</option>
+                  <option value="under_replacement">Under replacement</option>
+                </select>
+                <button style="font-size:11px; margin-top:4px;">Update</button>
+              </form>
+            </div>
+          </details>
+        </td>
+      </tr>
+      {{ else }}
+      <tr><td colspan="6" class="muted" style="text-align:center; padding:30px;">No transponders yet — add one on the right.</td></tr>
+      {{ end }}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Add transponder</h3>
+    <form method="post" action="/admin/transponders">
+      <label>Tag number *</label>
+      <input name="transponderId" required placeholder="001234567">
+      <label>Serial number</label>
+      <input name="serialNumber" placeholder="optional">
+      <label>Assign to vehicle (optional)</label>
+      <select name="vehicleId">
+        <option value="">— unassigned —</option>
+        {{ range .Vehicles }}<option value="{{ .ID }}">{{ .Label }}</option>{{ end }}
+      </select>
+      <label>Notes</label>
+      <textarea name="notes" rows="2"></textarea>
+      <button type="submit" style="margin-top:10px; width:100%;">Add transponder</button>
+    </form>
+  </div>
+</div>
+{{end}}
