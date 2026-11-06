@@ -4,6 +4,7 @@
   <div class="flex">
     <a href="/admin/reservations/{{ .R.ID }}/agreement.pdf" class="btn secondary" target="_blank">Agreement PDF</a>
     <a href="/admin/reservations/{{ .R.ID }}/invoice.pdf" class="btn secondary" target="_blank">Invoice PDF</a>
+    <a href="/admin/reservations/{{ .R.ID }}/invoice/edit" class="btn">✏ Edit invoice</a>
     <form method="post" action="/admin/reservations/{{ .R.ID }}/photo-link" style="display:inline;">
       <button class="secondary">Email photo link</button>
     </form>
@@ -94,7 +95,7 @@
         <td>${{ dollars .TotalCents }}</td>
         <td class="muted">{{ if .IssuedAt }}{{ fmtDay .IssuedAt.Local }}{{ else }}—{{ end }}</td>
         <td class="muted">{{ if .SentAt }}{{ fmtDay .SentAt.Local }}{{ else }}—{{ end }}</td>
-        <td><a class="btn secondary" href="/admin/invoices/{{ .ID }}">Open</a></td>
+        <td><a class="btn" href="/admin/invoices/{{ .ID }}">✏ Edit</a></td>
       </tr>
     {{ else }}
       <tr><td colspan="7" class="muted" style="text-align:center;padding:20px;">No invoices yet.</td></tr>
@@ -126,6 +127,7 @@
       <form method="post" action="/admin/reservations/{{ .R.ID }}/tolls/sync" style="display:inline;">
         <button class="secondary small" title="Add any unbilled tolls to the final invoice">↻ Sync to invoice</button>
       </form>
+      <a href="/admin/reservations/{{ .R.ID }}/invoice/edit" class="btn small">✏ Edit invoice</a>
     </div>
   </div>
   <p class="muted" style="font-size:13px; margin-top:0;">E-ZPass tolls attributed to this rental. New tolls are added to the final invoice automatically if one exists; otherwise they bill when you check the car in.</p>

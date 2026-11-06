@@ -144,6 +144,7 @@ func main() {
 		r.Post("/admin/reservations/{id}/photo-link", web.ReservationPhotoLink)
 		r.Post("/admin/reservations/{id}/fleet-link", web.ReservationFleetLink)
 		r.Post("/admin/reservations/{id}/open-thread", web.OpenThreadForReservation)
+		r.Get("/admin/reservations/{id}/invoice/edit", web.ReservationInvoiceEdit)
 		r.Post("/admin/reservations/{id}/tolls", web.ReservationTollAdd)
 		r.Post("/admin/reservations/{id}/tolls/sync", web.ReservationTollsSync)
 		r.Get("/admin/reservations/{id}/agreement.pdf", web.AdminAgreementPDF)

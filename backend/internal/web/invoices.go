@@ -475,6 +475,36 @@ func (h *Handler) invoicesForReservation(ctx context.Context, cid, resID uuid.UU
 // Admin HTTP handlers
 // =============================================================================
 
+// ReservationInvoiceEdit is the "go to the invoice editor for this booking"
+// shortcut. Picks post > pre, creates a pre-invoice on the fly if none exists,
+// then redirects to /admin/invoices/<id>.
+func (h *Handler) ReservationInvoiceEdit(w http.ResponseWriter, r *http.Request) {
+	s, _ := From(r)
+	cid := *s.CompanyID
+	ridStr := chi.URLParam(r, "id")
+	rid, err := uuid.Parse(ridStr)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	var invID uuid.UUID
+	qerr := h.Pool.QueryRow(r.Context(), `
+		SELECT id FROM invoices WHERE company_id=$1 AND reservation_id=$2
+		 ORDER BY CASE kind WHEN 'post' THEN 0 ELSE 1 END
+		 LIMIT 1
+	`, cid, rid).Scan(&invID)
+	if qerr != nil {
+		// None yet — spin up a pre-invoice so the admin has something to edit.
+		newID, perr := h.EnsurePreInvoice(r.Context(), cid, rid)
+		if perr != nil || newID == uuid.Nil {
+			http.Redirect(w, r, "/admin/reservations/"+ridStr+"?err=Could+not+create+invoice", http.StatusSeeOther)
+			return
+		}
+		invID = newID
+	}
+	http.Redirect(w, r, "/admin/invoices/"+invID.String(), http.StatusSeeOther)
+}
+
 func (h *Handler) InvoiceEditor(w http.ResponseWriter, r *http.Request) {
 	s, _ := From(r)
 	cid := *s.CompanyID
