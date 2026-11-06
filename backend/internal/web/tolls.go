@@ -698,6 +698,12 @@ func (h *Handler) importTollCSV(r *http.Request, cid uuid.UUID, acc *TollAccount
 				UPDATE toll_transactions SET reservation_id=$1, vehicle_id=$2, customer_id=$3,
 				       match_status=$4, updated_at=NOW()
 				 WHERE id=$5`, rid, vid, cuid, status, insertedID)
+			// If the toll matched a reservation that already has a final
+			// invoice, bill it immediately; otherwise it stays unbilled and
+			// the final invoice (on check-in or manual sync) will pick it up.
+			if rid != nil && status == "matched" {
+				_, _ = h.SyncTollsToFinalInvoice(r, cid, *rid)
+			}
 		}
 	}
 
@@ -783,7 +789,163 @@ func (h *Handler) ReservationTollAdd(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin/reservations/"+rid+"?err="+err.Error()+"#tolls", http.StatusSeeOther)
 		return
 	}
-	http.Redirect(w, r, "/admin/reservations/"+rid+"?flash=Toll+added#tolls", http.StatusSeeOther)
+
+	// Auto-sync to the final invoice when one exists, so the toll shows on
+	// the printable invoice + the customer portal without the admin having
+	// to click a second button.
+	resUUID, _ := uuid.Parse(rid)
+	if n, serr := h.SyncTollsToFinalInvoice(r, cid, resUUID); serr != nil {
+		http.Redirect(w, r, "/admin/reservations/"+rid+"?err=Toll+saved+but+sync+failed%3A+"+serr.Error()+"#tolls", http.StatusSeeOther)
+		return
+	} else if n > 0 {
+		http.Redirect(w, r, "/admin/reservations/"+rid+"?flash=Toll+added+and+billed+to+final+invoice#tolls", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/admin/reservations/"+rid+"?flash=Toll+added+%28no+final+invoice+yet%3B+will+bill+on+check-in%29#tolls", http.StatusSeeOther)
+}
+
+// ReservationTollsSync is an explicit "sync tolls to final invoice" button.
+func (h *Handler) ReservationTollsSync(w http.ResponseWriter, r *http.Request) {
+	s, _ := From(r)
+	cid := *s.CompanyID
+	rid := chi.URLParam(r, "id")
+	resUUID, err := uuid.Parse(rid)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	n, err := h.SyncTollsToFinalInvoice(r, cid, resUUID)
+	if err != nil {
+		http.Redirect(w, r, "/admin/reservations/"+rid+"?err=Sync+failed%3A+"+err.Error()+"#tolls", http.StatusSeeOther)
+		return
+	}
+	if n == 0 {
+		http.Redirect(w, r, "/admin/reservations/"+rid+"?flash=No+unbilled+tolls+to+sync#tolls", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/admin/reservations/"+rid+"?flash=Synced+tolls+to+final+invoice#tolls", http.StatusSeeOther)
+}
+
+// SyncTollsToFinalInvoice takes every matched+unbilled toll on this
+// reservation and inserts a corresponding invoice_items row on the final
+// ('post') invoice, then marks the tolls 'invoiced'. Idempotent — safe to
+// call repeatedly. Returns (added, error). If no final invoice exists for
+// the reservation yet, this is a no-op (returns 0, nil).
+func (h *Handler) SyncTollsToFinalInvoice(r *http.Request, cid, resID uuid.UUID) (int, error) {
+	// Find the reservation's final invoice (if any).
+	var invID uuid.UUID
+	err := h.Pool.QueryRow(r.Context(),
+		`SELECT id FROM invoices WHERE company_id=$1 AND reservation_id=$2 AND kind='post'`,
+		cid, resID).Scan(&invID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, nil
+		}
+		return 0, err
+	}
+
+	// Pull unbilled tolls for this reservation.
+	rows, err := h.Pool.Query(r.Context(), `
+		SELECT id, transaction_at, toll_location, entry_plaza, exit_plaza, amount_cents, admin_fee_cents
+		FROM toll_transactions
+		WHERE company_id=$1 AND reservation_id=$2 AND match_status='matched'
+		  AND billing_status='unbilled' AND invoice_id IS NULL
+		ORDER BY transaction_at
+	`, cid, resID)
+	if err != nil {
+		return 0, err
+	}
+	type tollRow struct {
+		id                            uuid.UUID
+		when                          time.Time
+		loc, entry, exitp             *string
+		amount, fee                   int
+	}
+	var tolls []tollRow
+	for rows.Next() {
+		var tr tollRow
+		if err := rows.Scan(&tr.id, &tr.when, &tr.loc, &tr.entry, &tr.exitp, &tr.amount, &tr.fee); err == nil {
+			tolls = append(tolls, tr)
+		}
+	}
+	rows.Close()
+	if len(tolls) == 0 {
+		return 0, nil
+	}
+
+	ctx := r.Context()
+	tx, err := h.Pool.Begin(ctx)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback(ctx)
+
+	// Current max sort_order on this invoice so new lines go at the end.
+	var sortBase int
+	_ = tx.QueryRow(ctx, `SELECT COALESCE(MAX(sort_order),-1)+1 FROM invoice_items WHERE invoice_id=$1`, invID).Scan(&sortBase)
+
+	added := 0
+	for i, t := range tolls {
+		// Compose a human line description: "Toll — Entry → Exit (date)" or
+		// "Toll — Location (date)" or just "Toll (date)".
+		plaza := ""
+		switch {
+		case t.entry != nil && t.exitp != nil && *t.entry != "" && *t.exitp != "":
+			plaza = *t.entry + " → " + *t.exitp
+		case t.loc != nil && *t.loc != "":
+			plaza = *t.loc
+		case t.entry != nil && *t.entry != "":
+			plaza = *t.entry
+		case t.exitp != nil && *t.exitp != "":
+			plaza = *t.exitp
+		}
+		desc := "Toll"
+		if plaza != "" {
+			desc = "Toll — " + plaza
+		}
+		desc += " (" + t.when.Format("02 Jan 15:04") + ")"
+
+		lineTotal := t.amount + t.fee
+		// INSERT the toll line + (idempotency guard: skip if the toll is
+		// already on this invoice).
+		var newLineID uuid.UUID
+		err := tx.QueryRow(ctx, `
+			INSERT INTO invoice_items (invoice_id, description, quantity_x100, unit_price_cents, amount_cents, sort_order, toll_transaction_id)
+			VALUES ($1,$2,100,$3,$3,$4,$5)
+			ON CONFLICT (invoice_id, toll_transaction_id) WHERE toll_transaction_id IS NOT NULL DO NOTHING
+			RETURNING id
+		`, invID, desc, lineTotal, sortBase+i, t.id).Scan(&newLineID)
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return added, err
+		}
+		if err == nil {
+			added++
+		}
+		// Mark the toll as invoiced regardless (safe if already was).
+		if _, err := tx.Exec(ctx, `
+			UPDATE toll_transactions
+			   SET invoice_id=$1, invoiced_at=COALESCE(invoiced_at, NOW()),
+			       billing_status='invoiced', updated_at=NOW()
+			 WHERE id=$2`, invID, t.id); err != nil {
+			return added, err
+		}
+	}
+
+	// Recompute invoice totals from items.
+	var sub int
+	_ = tx.QueryRow(ctx, `SELECT COALESCE(SUM(amount_cents),0) FROM invoice_items WHERE invoice_id=$1`, invID).Scan(&sub)
+	var ratePct int
+	var inclusive bool
+	_ = tx.QueryRow(ctx, `SELECT tax_rate_pct, false FROM invoices WHERE id=$1`, invID).Scan(&ratePct, &inclusive)
+	tax := sub * ratePct / 100
+	total := sub + tax
+	if _, err := tx.Exec(ctx, `
+		UPDATE invoices SET subtotal_cents=$1, tax_cents=$2, total_cents=$3, updated_at=NOW()
+		WHERE id=$4`, sub, tax, total, invID); err != nil {
+		return added, err
+	}
+
+	return added, tx.Commit(ctx)
 }
 
 // TollsForReservation returns every toll transaction tied to a reservation

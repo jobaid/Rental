@@ -1135,6 +1135,11 @@ func (h *Handler) ReservationCheckin(w http.ResponseWriter, r *http.Request) {
 		if _, ierr := h.EnsurePostInvoice(ctx, cid, rid); ierr != nil {
 			log.Printf("post-invoice: %v", ierr)
 		}
+		// Sync any tolls that already landed against this rental into the
+		// final invoice. Safe no-op when nothing's pending.
+		if _, ierr := h.SyncTollsToFinalInvoice(r, cid, rid); ierr != nil {
+			log.Printf("toll-sync at checkin: %v", ierr)
+		}
 	}
 	http.Redirect(w, r, "/admin/reservations/"+id+"?flash=Checked+in+%E2%80%94+final+invoice+ready", http.StatusSeeOther)
 }

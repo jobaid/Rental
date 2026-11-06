@@ -122,8 +122,13 @@
 <div class="card" style="margin-top: 20px;">
   <div class="flex-between" style="margin-bottom:10px;">
     <h3 style="margin:0;">Toll charges</h3>
-    <small class="muted">E-ZPass tolls attributed to this rental. Add late-arriving charges after the vehicle has been returned.</small>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <form method="post" action="/admin/reservations/{{ .R.ID }}/tolls/sync" style="display:inline;">
+        <button class="secondary small" title="Add any unbilled tolls to the final invoice">↻ Sync to invoice</button>
+      </form>
+    </div>
   </div>
+  <p class="muted" style="font-size:13px; margin-top:0;">E-ZPass tolls attributed to this rental. New tolls are added to the final invoice automatically if one exists; otherwise they bill when you check the car in.</p>
   <table>
     <thead><tr><th>When</th><th>Location</th><th>Tag</th><th style="text-align:right;">Toll</th><th style="text-align:right;">Admin</th><th style="text-align:right;">Total</th><th>Status</th></tr></thead>
     <tbody>
