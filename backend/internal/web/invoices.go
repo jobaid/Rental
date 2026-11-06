@@ -21,14 +21,18 @@ import (
 // =============================================================================
 
 type InvoiceItem struct {
-	ID             uuid.UUID
-	Description    string
-	Quantity       float64 // display qty (quantity_x100 / 100)
-	QuantityX100   int
-	UnitPriceCents int
-	AmountCents    int
-	SortOrder      int
+	ID                uuid.UUID
+	Description       string
+	Quantity          float64 // display qty (quantity_x100 / 100)
+	QuantityX100      int
+	UnitPriceCents    int
+	AmountCents       int
+	SortOrder         int
+	TollTransactionID *uuid.UUID
 }
+
+// IsToll is a template helper for marking toll-backed lines in the editor.
+func (i InvoiceItem) IsToll() bool { return i.TollTransactionID != nil }
 
 type Invoice struct {
 	ID             uuid.UUID
@@ -429,7 +433,7 @@ func (h *Handler) loadInvoice(ctx context.Context, cid, id uuid.UUID) (*Invoice,
 		cid).Scan(&inv.BranchName, &inv.BranchAddr)
 	// Items.
 	rows, err := h.Pool.Query(ctx, `
-		SELECT id, description, quantity_x100, unit_price_cents, amount_cents, sort_order
+		SELECT id, description, quantity_x100, unit_price_cents, amount_cents, sort_order, toll_transaction_id
 		FROM invoice_items WHERE invoice_id=$1 ORDER BY sort_order, created_at
 	`, inv.ID)
 	if err != nil {
@@ -438,7 +442,7 @@ func (h *Handler) loadInvoice(ctx context.Context, cid, id uuid.UUID) (*Invoice,
 	defer rows.Close()
 	for rows.Next() {
 		var it InvoiceItem
-		if err := rows.Scan(&it.ID, &it.Description, &it.QuantityX100, &it.UnitPriceCents, &it.AmountCents, &it.SortOrder); err != nil {
+		if err := rows.Scan(&it.ID, &it.Description, &it.QuantityX100, &it.UnitPriceCents, &it.AmountCents, &it.SortOrder, &it.TollTransactionID); err != nil {
 			return nil, err
 		}
 		it.Quantity = float64(it.QuantityX100) / 100.0
@@ -590,6 +594,15 @@ func (h *Handler) InvoiceSave(w http.ResponseWriter, r *http.Request) {
 		}
 		if it.id != "" && !strings.HasPrefix(key, "new") {
 			if it.delete {
+				// If the line is backed by a toll_transaction, revert the
+				// toll back to unbilled so it can be re-synced or removed
+				// cleanly. Otherwise plain delete.
+				_, _ = tx.Exec(ctx, `
+					UPDATE toll_transactions
+					   SET billing_status='unbilled', invoice_id=NULL, invoiced_at=NULL, updated_at=NOW()
+					 WHERE id IN (SELECT toll_transaction_id FROM invoice_items
+					               WHERE invoice_id=$1 AND id=$2 AND toll_transaction_id IS NOT NULL)
+				`, id, it.id)
 				_, _ = tx.Exec(ctx, `DELETE FROM invoice_items WHERE invoice_id=$1 AND id=$2`, id, it.id)
 				continue
 			}
