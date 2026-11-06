@@ -798,10 +798,10 @@ func (h *Handler) ReservationTollAdd(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin/reservations/"+rid+"?err=Toll+saved+but+sync+failed%3A+"+serr.Error()+"#tolls", http.StatusSeeOther)
 		return
 	} else if n > 0 {
-		http.Redirect(w, r, "/admin/reservations/"+rid+"?flash=Toll+added+and+billed+to+final+invoice#tolls", http.StatusSeeOther)
+		http.Redirect(w, r, "/admin/reservations/"+rid+"?flash=Toll+added+and+billed+to+invoice#tolls", http.StatusSeeOther)
 		return
 	}
-	http.Redirect(w, r, "/admin/reservations/"+rid+"?flash=Toll+added+%28no+final+invoice+yet%3B+will+bill+on+check-in%29#tolls", http.StatusSeeOther)
+	http.Redirect(w, r, "/admin/reservations/"+rid+"?flash=Toll+added#tolls", http.StatusSeeOther)
 }
 
 // ReservationTollsSync is an explicit "sync tolls to final invoice" button.
@@ -826,26 +826,36 @@ func (h *Handler) ReservationTollsSync(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin/reservations/"+rid+"?flash=Synced+tolls+to+final+invoice#tolls", http.StatusSeeOther)
 }
 
-// SyncTollsToFinalInvoice takes every matched+unbilled toll on this
-// reservation and inserts a corresponding invoice_items row on the final
-// ('post') invoice, then marks the tolls 'invoiced'. Idempotent — safe to
-// call repeatedly. Returns (added, error). If no final invoice exists for
-// the reservation yet, this is a no-op (returns 0, nil).
+// SyncTollsToFinalInvoice bills every matched+unbilled toll on this
+// reservation into an invoice. Preference: the final ('post') invoice if it
+// exists, otherwise the pre-rental invoice. If NEITHER exists, creates a
+// pre-invoice first via EnsurePreInvoice so the toll never has nowhere to go.
+// Idempotent — safe to call repeatedly. Returns (added, error).
 func (h *Handler) SyncTollsToFinalInvoice(r *http.Request, cid, resID uuid.UUID) (int, error) {
-	// Find the reservation's final invoice (if any).
+	ctx := r.Context()
+
+	// Pick the best invoice: post if present, else pre.
 	var invID uuid.UUID
-	err := h.Pool.QueryRow(r.Context(),
-		`SELECT id FROM invoices WHERE company_id=$1 AND reservation_id=$2 AND kind='post'`,
-		cid, resID).Scan(&invID)
+	err := h.Pool.QueryRow(ctx, `
+		SELECT id FROM invoices
+		 WHERE company_id=$1 AND reservation_id=$2
+		 ORDER BY CASE kind WHEN 'post' THEN 0 ELSE 1 END
+		 LIMIT 1
+	`, cid, resID).Scan(&invID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return 0, nil
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return 0, err
 		}
-		return 0, err
+		// No invoice yet — create a pre so we have somewhere to attach tolls.
+		newID, perr := h.EnsurePreInvoice(ctx, cid, resID)
+		if perr != nil {
+			return 0, fmt.Errorf("create pre-invoice: %w", perr)
+		}
+		invID = newID
 	}
 
 	// Pull unbilled tolls for this reservation.
-	rows, err := h.Pool.Query(r.Context(), `
+	rows, err := h.Pool.Query(ctx, `
 		SELECT id, transaction_at, toll_location, entry_plaza, exit_plaza, amount_cents, admin_fee_cents
 		FROM toll_transactions
 		WHERE company_id=$1 AND reservation_id=$2 AND match_status='matched'
@@ -856,10 +866,10 @@ func (h *Handler) SyncTollsToFinalInvoice(r *http.Request, cid, resID uuid.UUID)
 		return 0, err
 	}
 	type tollRow struct {
-		id                            uuid.UUID
-		when                          time.Time
-		loc, entry, exitp             *string
-		amount, fee                   int
+		id                uuid.UUID
+		when              time.Time
+		loc, entry, exitp *string
+		amount, fee       int
 	}
 	var tolls []tollRow
 	for rows.Next() {
@@ -873,7 +883,6 @@ func (h *Handler) SyncTollsToFinalInvoice(r *http.Request, cid, resID uuid.UUID)
 		return 0, nil
 	}
 
-	ctx := r.Context()
 	tx, err := h.Pool.Begin(ctx)
 	if err != nil {
 		return 0, err
@@ -886,8 +895,7 @@ func (h *Handler) SyncTollsToFinalInvoice(r *http.Request, cid, resID uuid.UUID)
 
 	added := 0
 	for i, t := range tolls {
-		// Compose a human line description: "Toll — Entry → Exit (date)" or
-		// "Toll — Location (date)" or just "Toll (date)".
+		// Compose a human line description.
 		plaza := ""
 		switch {
 		case t.entry != nil && t.exitp != nil && *t.entry != "" && *t.exitp != "":
@@ -906,28 +914,30 @@ func (h *Handler) SyncTollsToFinalInvoice(r *http.Request, cid, resID uuid.UUID)
 		desc += " (" + t.when.Format("02 Jan 15:04") + ")"
 
 		lineTotal := t.amount + t.fee
-		// INSERT the toll line + (idempotency guard: skip if the toll is
-		// already on this invoice).
-		var newLineID uuid.UUID
-		err := tx.QueryRow(ctx, `
+
+		// Skip if already on this invoice (explicit guard — robust).
+		var exists int
+		_ = tx.QueryRow(ctx,
+			`SELECT 1 FROM invoice_items WHERE invoice_id=$1 AND toll_transaction_id=$2`,
+			invID, t.id).Scan(&exists)
+		if exists == 1 {
+			continue
+		}
+
+		if _, err := tx.Exec(ctx, `
 			INSERT INTO invoice_items (invoice_id, description, quantity_x100, unit_price_cents, amount_cents, sort_order, toll_transaction_id)
 			VALUES ($1,$2,100,$3,$3,$4,$5)
-			ON CONFLICT (invoice_id, toll_transaction_id) WHERE toll_transaction_id IS NOT NULL DO NOTHING
-			RETURNING id
-		`, invID, desc, lineTotal, sortBase+i, t.id).Scan(&newLineID)
-		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-			return added, err
+		`, invID, desc, lineTotal, sortBase+i, t.id); err != nil {
+			return added, fmt.Errorf("insert toll line: %w", err)
 		}
-		if err == nil {
-			added++
-		}
-		// Mark the toll as invoiced regardless (safe if already was).
+		added++
+
 		if _, err := tx.Exec(ctx, `
 			UPDATE toll_transactions
 			   SET invoice_id=$1, invoiced_at=COALESCE(invoiced_at, NOW()),
 			       billing_status='invoiced', updated_at=NOW()
 			 WHERE id=$2`, invID, t.id); err != nil {
-			return added, err
+			return added, fmt.Errorf("update toll: %w", err)
 		}
 	}
 
@@ -935,8 +945,7 @@ func (h *Handler) SyncTollsToFinalInvoice(r *http.Request, cid, resID uuid.UUID)
 	var sub int
 	_ = tx.QueryRow(ctx, `SELECT COALESCE(SUM(amount_cents),0) FROM invoice_items WHERE invoice_id=$1`, invID).Scan(&sub)
 	var ratePct int
-	var inclusive bool
-	_ = tx.QueryRow(ctx, `SELECT tax_rate_pct, false FROM invoices WHERE id=$1`, invID).Scan(&ratePct, &inclusive)
+	_ = tx.QueryRow(ctx, `SELECT tax_rate_pct FROM invoices WHERE id=$1`, invID).Scan(&ratePct)
 	tax := sub * ratePct / 100
 	total := sub + tax
 	if _, err := tx.Exec(ctx, `
