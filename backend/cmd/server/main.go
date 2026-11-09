@@ -204,6 +204,8 @@ func main() {
 		r.Get("/admin/reports.csv", web.ReportsCSVPro)
 		r.Get("/admin/settings", web.Settings)
 		r.Post("/admin/settings", web.SettingsPost)
+		r.Post("/admin/settings/logo", web.LogoUpload)
+		r.Post("/admin/settings/logo/remove", web.LogoRemove)
 		r.Post("/admin/settings/smtp", web.SMTPPost)
 		r.Post("/admin/settings/smtp-test", web.SMTPTest)
 		r.Post("/admin/settings/tax", web.TaxPost)

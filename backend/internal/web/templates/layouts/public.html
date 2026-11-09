@@ -1,6 +1,9 @@
 {{define "header"}}
 <header class="site-header">
-  <a href="/" class="logo">mosrental</a>
+  <a href="/" class="logo" style="display:flex; align-items:center; gap:10px;">
+    {{ if and .Brand .Brand.LogoURL }}<img src="{{ .Brand.LogoURL }}" alt="{{ .Brand.Name }}" style="height:32px; width:auto; object-fit:contain;">{{ end }}
+    <span>{{ if .Brand }}{{ .Brand.Name }}{{ else }}mosrental{{ end }}</span>
+  </a>
   <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" onclick="var n=document.getElementById('site-nav');n.classList.toggle('open');this.setAttribute('aria-expanded',n.classList.contains('open'));">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
   </button>
@@ -25,7 +28,14 @@
 <footer class="site-footer" style="padding: 48px 24px 32px; text-align: left;">
   <div style="max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px;">
     <div>
-      <div style="font-weight: 800; font-size: 20px; letter-spacing: -0.03em; color: var(--text);">mosrental</div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        {{ if and .Brand .Brand.LogoURL }}<img src="{{ .Brand.LogoURL }}" alt="" style="height:28px; width:auto;">{{ end }}
+        <div style="font-weight: 800; font-size: 20px; letter-spacing: -0.03em; color: var(--text);">{{ if .Brand }}{{ .Brand.Name }}{{ else }}mosrental{{ end }}</div>
+      </div>
+      {{ if and .Brand .Brand.Address }}<p style="margin:8px 0 0; color:var(--muted); font-size:12.5px;">{{ .Brand.Address }}</p>{{ end }}
+      {{ if and .Brand .Brand.Phone }}<p style="margin:4px 0 0; color:var(--muted); font-size:12.5px;">📞 {{ .Brand.Phone }}</p>{{ end }}
+      {{ if and .Brand .Brand.Email }}<p style="margin:4px 0 0; color:var(--muted); font-size:12.5px;">✉ {{ .Brand.Email }}</p>{{ end }}
+      {{ if and .Brand .Brand.Hours }}<p style="margin:4px 0 0; color:var(--muted); font-size:12.5px;">🕒 {{ .Brand.Hours }}</p>{{ end }}
       <p style="margin: 10px 0 0; color: var(--muted); font-size: 13px; max-width: 300px;">
         Modern car rental. Pick a date, pick a car, drive. We handle the paperwork.
       </p>

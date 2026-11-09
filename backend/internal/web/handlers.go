@@ -53,6 +53,9 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request, name string, ti
 		data = map[string]any{}
 	}
 	data["Public"] = strings.HasPrefix(name, "public/")
+	if data["Public"].(bool) {
+		data["Brand"] = h.loadBrand(r.Context())
+	}
 	data["Title"] = title
 	data["Active"] = active
 	if s, ok := From(r); ok {
@@ -1669,7 +1672,7 @@ func (h *Handler) Settings(w http.ResponseWriter, r *http.Request) {
 	s, _ := From(r)
 	cid := *s.CompanyID
 	type kv map[string]any
-	general := kv{"businessName": "", "currency": "USD", "timezone": "UTC", "mileageUnit": "km", "phone": "", "address": ""}
+	general := kv{"businessName": "", "currency": "USD", "timezone": "UTC", "mileageUnit": "km", "phone": "", "email": "", "address": "", "hours": "", "website": "", "logoUrl": ""}
 	rental := kv{"minHours": 24, "maxDays": 90, "graceMinutes": 60, "depositDefaultCents": 20000}
 	smtp := kv{"host": "", "port": "587", "user": "", "fromAddr": "", "fromName": "mosrental", "hasPassword": false}
 
@@ -1747,13 +1750,36 @@ func (h *Handler) SettingsPost(w http.ResponseWriter, r *http.Request) {
 	s, _ := From(r)
 	cid := *s.CompanyID
 	_ = r.ParseForm()
+	// Preserve the existing logoUrl so saving the general form doesn't wipe it.
+	existingLogo := ""
+	{
+		var raw []byte
+		if err := h.Pool.QueryRow(r.Context(),
+			`SELECT value FROM settings WHERE company_id=$1 AND key='general'`, cid).Scan(&raw); err == nil {
+			var m map[string]any
+			if jsonUnmarshal(raw, &m) == nil {
+				if s, ok := m["logoUrl"].(string); ok {
+					existingLogo = s
+				}
+			}
+		}
+	}
 	gen := map[string]any{
-		"businessName": r.FormValue("businessName"),
-		"currency":     r.FormValue("currency"),
-		"timezone":     r.FormValue("timezone"),
-		"phone":        r.FormValue("phone"),
-		"address":      r.FormValue("address"),
-		"mileageUnit":  "km",
+		"businessName":  strings.TrimSpace(r.FormValue("businessName")),
+		"currency":      strings.TrimSpace(r.FormValue("currency")),
+		"timezone":      strings.TrimSpace(r.FormValue("timezone")),
+		"phone":         strings.TrimSpace(r.FormValue("phone")),
+		"email":         strings.TrimSpace(r.FormValue("email")),
+		"address":       strings.TrimSpace(r.FormValue("address")),
+		"hours":         strings.TrimSpace(r.FormValue("hours")),
+		"website":       strings.TrimSpace(r.FormValue("website")),
+		"mileageUnit":   "km",
+		"logoUrl":       existingLogo,
+	}
+	// Also keep the companies.name in sync if business name changed.
+	if bn, _ := gen["businessName"].(string); bn != "" {
+		_, _ = h.Pool.Exec(r.Context(),
+			`UPDATE companies SET name=$1, updated_at=NOW() WHERE id=$2`, bn, cid)
 	}
 	n := func(k string) int { v, _ := strconv.Atoi(r.FormValue(k)); return v }
 	rent := map[string]any{

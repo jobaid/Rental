@@ -22,22 +22,73 @@
   <button type="submit" style="margin-top: 14px;">Update my account</button>
 </form>
 
+<!-- Company branding: logo + name — reflects on the customer site header & footer. -->
+<div class="card" style="max-width: 760px; margin-bottom: 20px;">
+  <div class="flex-between" style="margin-bottom:10px;">
+    <h3 style="margin:0;">Company logo</h3>
+    <small class="muted">Appears in the customer site header, footer, and emails.</small>
+  </div>
+  <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+    <div style="width:140px; height:80px; border:1.5px dashed var(--border); border-radius:10px; background:var(--surface-2); display:flex; align-items:center; justify-content:center; overflow:hidden;">
+      {{ if .General.logoUrl }}
+        <img src="{{ .General.logoUrl }}" alt="Current logo" style="max-width:100%; max-height:100%; object-fit:contain;">
+      {{ else }}
+        <span class="muted" style="font-size:12px;">No logo</span>
+      {{ end }}
+    </div>
+    <div style="flex:1; min-width:220px;">
+      <form method="post" action="/admin/settings/logo" enctype="multipart/form-data" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+        <input type="file" name="logo" accept="image/png,image/jpeg,image/svg+xml,image/webp" required>
+        <button type="submit">Upload logo</button>
+      </form>
+      {{ if .General.logoUrl }}
+      <form method="post" action="/admin/settings/logo/remove" style="margin-top:8px;" onsubmit="return confirm('Remove the company logo?');">
+        <button class="ghost" type="submit" style="color:var(--danger); padding:0; background:transparent; font-size:13px;">Remove logo</button>
+      </form>
+      {{ end }}
+      <small class="muted" style="display:block; margin-top:8px; font-size:12px;">PNG, JPG, SVG or WebP. Transparent background works best. Aim for ~200 × 60 px.</small>
+    </div>
+  </div>
+</div>
+
 <form method="post" action="/admin/settings" class="card" style="max-width: 760px;">
-  <h3>Business info</h3>
-  <label>Business name</label><input name="businessName" value="{{ .General.businessName }}">
-  <label>Currency</label><input name="currency" value="{{ .General.currency }}">
-  <label>Timezone</label><input name="timezone" value="{{ .General.timezone }}">
-  <label>Phone</label><input name="phone" value="{{ .General.phone }}">
-  <label>Address</label><input name="address" value="{{ .General.address }}">
+  <h3>Company info <small class="muted" style="font-weight:400; font-size:13px;">— shown on the customer site</small></h3>
+  <label>Business name</label><input name="businessName" value="{{ .General.businessName }}" placeholder="Your rental company">
+  <label>Website <span class="muted" style="font-weight:400; font-size:12px;">(optional)</span></label>
+  <input name="website" value="{{ .General.website }}" placeholder="https://www.example.com">
 
-  <hr>
+  <hr style="border:0; border-top:1px solid var(--border); margin:16px 0;">
+
+  <h3>Contact — Customer-facing</h3>
+  <p class="muted" style="font-size:12.5px; margin-top:0;">Shown on the public Contact page, the site footer, and in the invoice footer.</p>
+  <div class="row">
+    <div><label>Phone</label><input name="phone" value="{{ .General.phone }}" placeholder="+1 555 000 0000"></div>
+    <div><label>Email</label><input name="email" type="email" value="{{ .General.email }}" placeholder="hello@yourcompany.com"></div>
+  </div>
+  <label>Address</label>
+  <input name="address" value="{{ .General.address }}" placeholder="123 Rental Lane, Richmond, VA 23219">
+  <label>Available hours / days</label>
+  <input name="hours" value="{{ .General.hours }}" placeholder="Mon–Sat 8:00 AM – 8:00 PM, Sun 10:00 AM – 6:00 PM">
+
+  <hr style="border:0; border-top:1px solid var(--border); margin:16px 0;">
+
+  <h3>Regional</h3>
+  <div class="row">
+    <div><label>Currency</label><input name="currency" value="{{ .General.currency }}"></div>
+    <div><label>Timezone</label><input name="timezone" value="{{ .General.timezone }}"></div>
+  </div>
+
+  <hr style="border:0; border-top:1px solid var(--border); margin:16px 0;">
+
   <h3>Rental rules</h3>
-  <label>Minimum rental hours</label><input type="number" name="minHours" value="{{ .Rental.minHours }}">
-  <label>Maximum rental days</label><input type="number" name="maxDays" value="{{ .Rental.maxDays }}">
-  <label>Return grace period (minutes)</label><input type="number" name="graceMinutes" value="{{ .Rental.graceMinutes }}">
-  <label>Default deposit (cents)</label><input type="number" name="depositDefaultCents" value="{{ .Rental.depositDefaultCents }}">
+  <div class="row">
+    <div><label>Minimum rental hours</label><input type="number" name="minHours" value="{{ .Rental.minHours }}"></div>
+    <div><label>Maximum rental days</label><input type="number" name="maxDays" value="{{ .Rental.maxDays }}"></div>
+    <div><label>Return grace period (minutes)</label><input type="number" name="graceMinutes" value="{{ .Rental.graceMinutes }}"></div>
+    <div><label>Default deposit (cents)</label><input type="number" name="depositDefaultCents" value="{{ .Rental.depositDefaultCents }}"></div>
+  </div>
 
-  <button style="margin-top:14px;">Save business &amp; rental settings</button>
+  <button style="margin-top:14px;">Save all settings</button>
 </form>
 
 <div class="card" style="max-width: 760px; margin-top: 20px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
