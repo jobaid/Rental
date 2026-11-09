@@ -453,17 +453,19 @@ func (h *Handler) PortalLogoutPost(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Portal(w http.ResponseWriter, r *http.Request) {
 	s, _ := From(r)
 	type row struct {
-		ID            uuid.UUID
-		BookingNumber string
-		Status        string
-		PickupAt      time.Time
-		ReturnAt      time.Time
-		TotalCents    int
-		Vehicle       string
+		ID               uuid.UUID
+		BookingNumber    string
+		Status           string
+		PickupAt         time.Time
+		ReturnAt         time.Time
+		TotalCents       int
+		Vehicle          string
+		ReadyForPickupAt *time.Time
 	}
 	rows, err := h.Pool.Query(r.Context(), `
 		SELECT r.id, r.booking_number, r.status, r.pickup_at, r.return_at, r.total_cents,
-		       COALESCE(v.year::text,'')||' '||COALESCE(v.make,'')||' '||COALESCE(v.model,'')
+		       COALESCE(v.year::text,'')||' '||COALESCE(v.make,'')||' '||COALESCE(v.model,''),
+		       r.ready_for_pickup_at
 		FROM reservations r
 		JOIN customers cu ON cu.id=r.customer_id
 		LEFT JOIN vehicles v ON v.id=r.vehicle_id
@@ -474,7 +476,7 @@ func (h *Handler) Portal(w http.ResponseWriter, r *http.Request) {
 		defer rows.Close()
 		for rows.Next() {
 			var b row
-			if err := rows.Scan(&b.ID, &b.BookingNumber, &b.Status, &b.PickupAt, &b.ReturnAt, &b.TotalCents, &b.Vehicle); err == nil {
+			if err := rows.Scan(&b.ID, &b.BookingNumber, &b.Status, &b.PickupAt, &b.ReturnAt, &b.TotalCents, &b.Vehicle, &b.ReadyForPickupAt); err == nil {
 				bookings = append(bookings, b)
 			}
 		}
@@ -489,19 +491,21 @@ func (h *Handler) PortalReservation(w http.ResponseWriter, r *http.Request) {
 	s, _ := From(r)
 	id := chi.URLParam(r, "id")
 	type resView struct {
-		ID            uuid.UUID
-		BookingNumber string
-		Status        string
-		PickupAt      time.Time
-		ReturnAt      time.Time
-		Vehicle       string
-		CompanyName   string
-		SubtotalCents int
-		TaxCents      int
-		ExtrasCents   int
-		TotalCents    int
-		PaidCents     int
-		CompanyID     uuid.UUID
+		ID                 uuid.UUID
+		BookingNumber      string
+		Status             string
+		PickupAt           time.Time
+		ReturnAt           time.Time
+		Vehicle            string
+		CompanyName        string
+		SubtotalCents      int
+		TaxCents           int
+		ExtrasCents        int
+		TotalCents         int
+		PaidCents          int
+		CompanyID          uuid.UUID
+		ReadyForPickupAt   *time.Time
+		ReadyForPickupNote *string
 	}
 	var v resView
 	err := h.Pool.QueryRow(r.Context(), `
@@ -509,7 +513,7 @@ func (h *Handler) PortalReservation(w http.ResponseWriter, r *http.Request) {
 		       COALESCE(v.year::text,'')||' '||COALESCE(v.make,'')||' '||COALESCE(v.model,''),
 		       co.name,
 		       r.subtotal_cents, r.tax_cents, r.extras_cents, r.total_cents, r.paid_cents,
-		       r.company_id
+		       r.company_id, r.ready_for_pickup_at, r.ready_for_pickup_note
 		FROM reservations r
 		JOIN customers cu ON cu.id=r.customer_id
 		JOIN companies co ON co.id=r.company_id
@@ -517,7 +521,7 @@ func (h *Handler) PortalReservation(w http.ResponseWriter, r *http.Request) {
 		WHERE r.id=$1 AND cu.user_id=$2
 	`, id, s.UserID).Scan(&v.ID, &v.BookingNumber, &v.Status, &v.PickupAt, &v.ReturnAt,
 		&v.Vehicle, &v.CompanyName, &v.SubtotalCents, &v.TaxCents, &v.ExtrasCents,
-		&v.TotalCents, &v.PaidCents, &v.CompanyID)
+		&v.TotalCents, &v.PaidCents, &v.CompanyID, &v.ReadyForPickupAt, &v.ReadyForPickupNote)
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -989,20 +993,22 @@ func (h *Handler) Reservations(w http.ResponseWriter, r *http.Request) {
 }
 
 type ReservationDetail struct {
-	ID             uuid.UUID
-	BookingNumber  string
-	Status         string
-	CustomerName   *string
-	VehicleLabel   *string
-	PickupAt       time.Time
-	ReturnAt       time.Time
-	DailyRateCents int
-	RentalDays     int
-	SubtotalCents  int
-	ExtrasCents    int
-	TaxCents       int
-	TotalCents     int
-	PaidCents      int
+	ID                 uuid.UUID
+	BookingNumber      string
+	Status             string
+	CustomerName       *string
+	VehicleLabel       *string
+	PickupAt           time.Time
+	ReturnAt           time.Time
+	DailyRateCents     int
+	RentalDays         int
+	SubtotalCents      int
+	ExtrasCents        int
+	TaxCents           int
+	TotalCents         int
+	PaidCents          int
+	ReadyForPickupAt   *time.Time
+	ReadyForPickupNote *string
 }
 
 type Hist struct{ CreatedAt time.Time; FromStatus *string; ToStatus string }
@@ -1017,14 +1023,16 @@ func (h *Handler) ReservationDetailPage(w http.ResponseWriter, r *http.Request) 
 		       CASE WHEN cu.id IS NULL THEN NULL ELSE cu.first_name||' '||cu.last_name END,
 		       CASE WHEN v.id IS NULL THEN NULL ELSE COALESCE(v.year::text,'')||' '||COALESCE(v.make,'')||' '||COALESCE(v.model,'') END,
 		       r.pickup_at, r.return_at, r.daily_rate_cents, r.rental_days,
-		       r.subtotal_cents, r.extras_cents, r.tax_cents, r.total_cents, r.paid_cents
+		       r.subtotal_cents, r.extras_cents, r.tax_cents, r.total_cents, r.paid_cents,
+		       r.ready_for_pickup_at, r.ready_for_pickup_note
 		FROM reservations r
 		LEFT JOIN customers cu ON cu.id=r.customer_id
 		LEFT JOIN vehicles v ON v.id=r.vehicle_id
 		WHERE r.company_id=$1 AND r.id=$2
 	`, cid, id).Scan(&d.ID, &d.BookingNumber, &d.Status, &d.CustomerName, &d.VehicleLabel,
 		&d.PickupAt, &d.ReturnAt, &d.DailyRateCents, &d.RentalDays,
-		&d.SubtotalCents, &d.ExtrasCents, &d.TaxCents, &d.TotalCents, &d.PaidCents)
+		&d.SubtotalCents, &d.ExtrasCents, &d.TaxCents, &d.TotalCents, &d.PaidCents,
+		&d.ReadyForPickupAt, &d.ReadyForPickupNote)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			http.NotFound(w, r)

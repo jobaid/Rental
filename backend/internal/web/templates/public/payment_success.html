@@ -1,0 +1,15 @@
+{{define "content"}}
+<section class="container" style="max-width:600px; text-align:center; padding:60px 20px;">
+  <div style="font-size:60px; margin-bottom:20px;">✓</div>
+  <h1 style="color:#166534;">Payment received</h1>
+  <p class="muted">Thank you. Your payment is being confirmed and will show as <strong>Paid</strong> on your invoice momentarily.</p>
+  {{ if .BookingNumber }}
+  <p style="font-size:13px; margin-top:20px;">Booking <strong>{{ .BookingNumber }}</strong> &middot; ${{ dollars .TotalCents }}</p>
+  {{ end }}
+  <div style="margin-top:28px; display:flex; gap:10px; justify-content:center;">
+    {{ if .Token }}<a href="/invoices/{{ .Token }}" class="btn">View invoice</a>{{ end }}
+    <a href="/portal" class="btn secondary">My bookings</a>
+  </div>
+  <p class="muted" style="font-size:12px; margin-top:28px;">A confirmation email will arrive shortly.</p>
+</section>
+{{end}}

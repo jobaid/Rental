@@ -1,0 +1,11 @@
+{{define "content"}}
+<section class="container" style="max-width:600px; text-align:center; padding:60px 20px;">
+  <div style="font-size:60px; margin-bottom:20px; color:#9ca3af;">×</div>
+  <h1>Payment cancelled</h1>
+  <p class="muted">You cancelled this payment. Nothing was charged. You can try again whenever you're ready.</p>
+  <div style="margin-top:28px; display:flex; gap:10px; justify-content:center;">
+    {{ if .Token }}<a href="/invoices/{{ .Token }}" class="btn">Open invoice</a>{{ end }}
+    <a href="/portal" class="btn secondary">My bookings</a>
+  </div>
+</section>
+{{end}}

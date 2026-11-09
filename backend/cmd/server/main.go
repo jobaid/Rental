@@ -103,6 +103,12 @@ func main() {
 
 	// Public read-only invoice link (customer-shared).
 	r.Get("/invoices/{token}", web.InvoicePublic)
+	r.Post("/invoices/{token}/pay", web.PublicInvoicePay)
+
+	// Stripe payment landing pages + webhook.
+	r.Get("/payments/success", web.PaymentSuccess)
+	r.Get("/payments/cancel", web.PaymentCancel)
+	r.Post("/webhooks/stripe", web.StripeWebhook)
 
 	// Fleet-prep tokenised inspection workflow.
 	r.Get("/fleet/{token}", web.FleetPrepGet)
@@ -143,6 +149,7 @@ func main() {
 		r.Post("/admin/reservations/{id}/payment", web.ReservationPayment)
 		r.Post("/admin/reservations/{id}/photo-link", web.ReservationPhotoLink)
 		r.Post("/admin/reservations/{id}/fleet-link", web.ReservationFleetLink)
+		r.Post("/admin/reservations/{id}/ready", web.ReservationMarkReady)
 		r.Post("/admin/reservations/{id}/open-thread", web.OpenThreadForReservation)
 		r.Get("/admin/reservations/{id}/invoice/edit", web.ReservationInvoiceEdit)
 		r.Post("/admin/reservations/{id}/tolls", web.ReservationTollAdd)
@@ -200,6 +207,10 @@ func main() {
 		r.Get("/admin/settings/legal", web.LegalSettings)
 		r.Post("/admin/settings/legal", web.LegalSave)
 		r.Post("/admin/settings/legal/reset", web.LegalReset)
+		r.Get("/admin/settings/stripe", web.StripeSettings)
+		r.Post("/admin/settings/stripe", web.StripeSettingsSave)
+		r.Post("/admin/settings/stripe/test", web.StripeTest)
+		r.Post("/admin/invoices/{id}/payment-link", web.InvoicePaymentLink)
 
 		// Toll management (E-ZPass Virginia + compatible).
 		r.Get("/admin/tolls", web.TollDashboard)

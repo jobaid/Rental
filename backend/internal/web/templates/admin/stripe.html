@@ -1,0 +1,70 @@
+{{define "content"}}
+<div class="flex-between" style="margin-bottom:14px;">
+  <h2 style="margin:0;">Stripe — online payments</h2>
+  <a href="/admin/settings" class="btn ghost">← Settings</a>
+</div>
+
+{{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
+{{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+
+<div class="row">
+  <form method="post" action="/admin/settings/stripe" class="card">
+    <h3 style="margin-top:0;">Connection</h3>
+    <div style="margin-bottom:10px;">
+      {{ if .Cfg.Configured }}
+        <span class="badge ok">Configured · {{ .Cfg.Mode }} mode</span>
+      {{ else }}
+        <span class="badge warn">Not configured</span>
+      {{ end }}
+    </div>
+
+    <label>Mode</label>
+    <select name="mode">
+      <option value="test" {{ if eq .Cfg.Mode "test" }}selected{{ end }}>Test — sandbox, no real charges</option>
+      <option value="live" {{ if eq .Cfg.Mode "live" }}selected{{ end }}>Live — real payments</option>
+    </select>
+
+    <label>Publishable key</label>
+    <input name="publishableKey" value="{{ .Cfg.PublishableKey }}" placeholder="pk_test_...">
+
+    <label>Secret key <span class="muted" style="font-weight:400; font-size:12px;">{{ if .Cfg.HasSecret }}(saved — leave blank to keep){{ end }}</span></label>
+    <input name="secretKey" type="password" placeholder="sk_test_... (leave blank to keep existing)">
+
+    <label>Webhook signing secret <span class="muted" style="font-weight:400; font-size:12px;">{{ if .Cfg.HasWebhookSecret }}(saved — leave blank to keep){{ end }}</span></label>
+    <input name="webhookSecret" type="password" placeholder="whsec_... (leave blank to keep existing)">
+
+    <div style="margin-top:12px; display:flex; gap:10px;">
+      <button type="submit">Save</button>
+      <button type="submit" formaction="/admin/settings/stripe/test" class="secondary">Test connection</button>
+    </div>
+  </form>
+
+  <div class="card">
+    <h3 style="margin-top:0;">How to wire this up</h3>
+    <ol style="padding-left:18px; font-size:13.5px; line-height:1.6;">
+      <li>Open your Stripe dashboard → <strong>Developers → API keys</strong>.
+        Copy the <strong>Publishable key</strong> and <strong>Secret key</strong> into the form.
+        Start in <strong>Test</strong> mode until you've charged a test card end-to-end.</li>
+      <li>Still in the Stripe dashboard → <strong>Developers → Webhooks → Add endpoint</strong>.
+        URL: <code style="background:#f1f5f9; padding:1px 6px; border-radius:4px;">https://my.2set.com/webhooks/stripe</code><br>
+        Events to send:
+        <ul style="margin-top:6px;">
+          <li><code>checkout.session.completed</code></li>
+          <li><code>checkout.session.async_payment_succeeded</code></li>
+          <li><code>checkout.session.async_payment_failed</code></li>
+          <li><code>checkout.session.expired</code></li>
+          <li><code>charge.refunded</code></li>
+          <li><code>refund.updated</code></li>
+        </ul>
+        After creating the endpoint, Stripe shows a <strong>Signing secret</strong> starting with <code>whsec_</code>. Paste it into "Webhook signing secret" above.</li>
+      <li>Click <strong>Save</strong> then <strong>Test connection</strong>. Green banner = OK.</li>
+      <li>Open any invoice → click <strong>Send payment link</strong>. Stripe returns a URL you can copy or send via the invoice email.</li>
+    </ol>
+    <p class="muted" style="font-size:12.5px; margin-top:14px;">
+      Keys are stored encrypted-at-rest by the database and never sent to the browser after save. Environment variables
+      <code>STRIPE_SECRET_KEY</code>, <code>STRIPE_PUBLISHABLE_KEY</code>, <code>STRIPE_WEBHOOK_SECRET</code>, <code>STRIPE_MODE</code>
+      override the DB values if set — useful for keeping production keys out of the database entirely.
+    </p>
+  </div>
+</div>
+{{end}}

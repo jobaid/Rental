@@ -30,6 +30,17 @@
 <div class="inv-wrap">
 {{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
 {{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+{{ if .Paylink }}
+<div class="card" style="background:#ecfeff; border-color:#06b6d4; margin-bottom:14px;">
+  <strong>💳 Stripe payment link ready.</strong> Copy and send to the customer (or share via the invoice email):
+  <div style="display:flex; gap:8px; margin-top:8px;">
+    <input id="paylinkbox" type="text" value="{{ .Paylink }}" readonly style="flex:1; font-family:monospace; font-size:13px;">
+    <button type="button" class="secondary" onclick="navigator.clipboard.writeText(document.getElementById('paylinkbox').value); this.textContent='✓ Copied'">Copy</button>
+    <a href="{{ .Paylink }}" target="_blank" class="btn secondary">Open</a>
+  </div>
+  <small class="muted" style="font-size:12px; display:block; margin-top:6px;">The customer can also use the "Pay now" button on their invoice page directly — no need to send the link if they already have the invoice URL.</small>
+</div>
+{{ end }}
 
 <div class="inv-top">
   <div class="inv-title">
@@ -43,6 +54,11 @@
   <div class="inv-actions">
     <a class="btn secondary" href="/admin/invoices/{{ .Inv.ID }}/print" target="_blank">Print preview</a>
     <a class="btn secondary" href="/invoices/{{ .Inv.PublicToken }}" target="_blank">Customer link</a>
+    {{ if ne .Inv.Status "paid" }}
+    <form method="post" action="/admin/invoices/{{ .Inv.ID }}/payment-link" style="display:inline;">
+      <button class="secondary" title="Generate Stripe payment link for this invoice">💳 Stripe payment link</button>
+    </form>
+    {{ end }}
     {{ if ne .Inv.Status "paid" }}
       <form method="post" action="/admin/invoices/{{ .Inv.ID }}/status" style="display:inline;">
         <input type="hidden" name="status" value="issued">

@@ -456,5 +456,48 @@ var slotLabels = []struct {
 
 func fleetSlotLabels() []struct{ Code, Label string } { return slotLabels }
 
+// =============================================================================
+// Ready-for-pickup: once the pre-inspection is done, the manager flips this
+// flag so the customer sees "Your car is ready" in the portal.
+// =============================================================================
+
+// ReservationMarkReady POST /admin/reservations/{id}/ready — sets the
+// ready_for_pickup_at timestamp (and optional note). Posting again updates
+// the note; POST with "unready=1" clears it.
+func (h *Handler) ReservationMarkReady(w http.ResponseWriter, r *http.Request) {
+	s, _ := From(r)
+	cid := *s.CompanyID
+	id := chi.URLParam(r, "id")
+	_ = r.ParseForm()
+	note := strings.TrimSpace(r.FormValue("note"))
+	if r.FormValue("unready") == "1" {
+		_, err := h.Pool.Exec(r.Context(), `
+			UPDATE reservations
+			   SET ready_for_pickup_at=NULL, ready_for_pickup_by=NULL, ready_for_pickup_note=NULL,
+			       updated_at=NOW()
+			 WHERE company_id=$1 AND id=$2
+		`, cid, id)
+		if err != nil {
+			http.Redirect(w, r, "/admin/reservations/"+id+"?err="+err.Error(), http.StatusSeeOther)
+			return
+		}
+		http.Redirect(w, r, "/admin/reservations/"+id+"?flash=Ready+status+cleared", http.StatusSeeOther)
+		return
+	}
+	_, err := h.Pool.Exec(r.Context(), `
+		UPDATE reservations
+		   SET ready_for_pickup_at=COALESCE(ready_for_pickup_at, NOW()),
+		       ready_for_pickup_by=$1,
+		       ready_for_pickup_note=NULLIF($2,''),
+		       updated_at=NOW()
+		 WHERE company_id=$3 AND id=$4
+	`, s.UserID, note, cid, id)
+	if err != nil {
+		http.Redirect(w, r, "/admin/reservations/"+id+"?err="+err.Error(), http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/admin/reservations/"+id+"?flash=Marked+ready+for+pickup", http.StatusSeeOther)
+}
+
 // Shortening — unused warning suppressor for the dummy funcs above.
 var _ = fmt.Sprintf

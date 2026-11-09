@@ -15,7 +15,10 @@
           <td class="muted">{{ fmtTime .PickupAt }}</td>
           <td class="muted">{{ fmtTime .ReturnAt }}</td>
           <td>${{ dollars .TotalCents }}</td>
-          <td><span class="badge {{ statusClass .Status }}">{{ .Status }}</span></td>
+          <td>
+            <span class="badge {{ statusClass .Status }}">{{ .Status }}</span>
+            {{ if .ReadyForPickupAt }}<span style="display:inline-block; margin-left:4px; padding:2px 8px; border-radius:999px; background:#dcfce7; color:#166534; font-size:10.5px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;">🚗 Ready</span>{{ end }}
+          </td>
           <td><a href="/portal/reservations/{{ .ID }}" class="btn secondary small">View final invoice</a></td>
         </tr>
         {{ else }}

@@ -529,9 +529,10 @@ func (h *Handler) InvoiceEditor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.render(w, r, "admin/invoice_edit.html", "Invoice "+inv.Number, "reservations", map[string]any{
-		"Inv":   inv,
-		"Flash": r.URL.Query().Get("flash"),
-		"Err":   r.URL.Query().Get("err"),
+		"Inv":     inv,
+		"Flash":   r.URL.Query().Get("flash"),
+		"Err":     r.URL.Query().Get("err"),
+		"Paylink": r.URL.Query().Get("paylink"),
 	})
 }
 
@@ -1051,6 +1052,16 @@ func (h *Handler) renderInvoiceHTML(inv *Invoice, message string, forEmail bool)
 	buf.WriteString(`<div><div style="height:40px;"></div><div class="line">Renter signature &nbsp;·&nbsp; Date</div></div>`)
 	buf.WriteString(`<div><div style="height:40px;"></div><div class="line">Authorized agent — ` + esc(inv.CompanyName) + `</div></div>`)
 	buf.WriteString(`</div>`)
+
+	// ========== PAY NOW (browser view only, not email) ==========
+	if !forEmail && inv.Status != "paid" && inv.Status != "void" && inv.TotalCents > 0 {
+		buf.WriteString(`<div style="padding:18px 44px 8px; text-align:center;">`)
+		buf.WriteString(`<form method="post" action="/invoices/` + esc(inv.PublicToken) + `/pay" style="display:inline;">`)
+		buf.WriteString(`<button type="submit" style="background:#635bff;color:#fff;border:0;padding:14px 32px;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;letter-spacing:.2px;">💳 Pay ` + fmtD(inv.TotalCents) + ` with Stripe</button>`)
+		buf.WriteString(`</form>`)
+		buf.WriteString(`<div style="font-size:11.5px;color:#6b7280;margin-top:8px;">Secure card payment via Stripe. We never see your card details.</div>`)
+		buf.WriteString(`</div>`)
+	}
 
 	// ========== FOOTER ==========
 	buf.WriteString(`<div class="foot">` + esc(inv.CompanyName))

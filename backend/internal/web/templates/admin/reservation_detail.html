@@ -55,6 +55,26 @@
     <hr>
     {{ end }}
 
+    <h3 id="ready" style="font-size:14px; margin-top: 10px;">Ready for pickup</h3>
+    {{ if .R.ReadyForPickupAt }}
+    <div style="padding:10px 12px; background:#dcfce7; border-left:3px solid #166534; border-radius:6px; font-size:13px; margin-bottom:8px;">
+      ✓ <strong>Customer notified.</strong> Marked ready {{ fmtTime .R.ReadyForPickupAt.Local }}.
+      {{ if deref .R.ReadyForPickupNote }}<div style="margin-top:6px; color:#065f46;">Note: {{ deref .R.ReadyForPickupNote }}</div>{{ end }}
+    </div>
+    <form method="post" action="/admin/reservations/{{ .R.ID }}/ready">
+      <input type="hidden" name="unready" value="1">
+      <button class="ghost" style="width:100%;">Clear "ready" status</button>
+    </form>
+    {{ else }}
+    <p class="muted" style="font-size:12.5px; margin-top:0;">Click Ready when the pre-inspection is done and the car is washed, fueled, and keys are at the desk. The customer will see "Your car is ready" on their portal.</p>
+    <form method="post" action="/admin/reservations/{{ .R.ID }}/ready">
+      <label>Note to customer (optional)</label>
+      <input name="note" placeholder="e.g. keys at the front desk">
+      <button style="margin-top: 8px; width: 100%; background:#166534;">✓ Mark ready for pickup</button>
+    </form>
+    {{ end }}
+    <hr>
+
     <h3 id="checkout" style="font-size:14px; margin-top: 10px;">Check out (pickup)</h3>
     <form method="post" action="/admin/reservations/{{ .R.ID }}/checkout">
       <label>Odometer (km) — required</label>
