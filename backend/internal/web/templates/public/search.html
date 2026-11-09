@@ -17,11 +17,13 @@
     <div class="vehicle-grid">
       {{ range .Results }}
       <article class="vehicle-card">
+        <a href="/vehicles/{{ .ID }}?from={{ $.From }}&to={{ $.To }}" style="text-decoration:none; color:inherit;">
         <div class="img" {{ if .PrimaryPhoto }}style="background-image:url('{{ .PrimaryPhoto }}')"{{ end }}>
           {{ if not .PrimaryPhoto }}&#128663;{{ end }}
         </div>
+        </a>
         <div class="body">
-          <h3>{{ .Year }} {{ .Make }} {{ .Model }}</h3>
+          <h3><a href="/vehicles/{{ .ID }}?from={{ $.From }}&to={{ $.To }}" style="color:inherit; text-decoration:none;">{{ .Year }} {{ .Make }} {{ .Model }}</a></h3>
           <p class="muted" style="margin:0 0 12px; font-size: 13px;">
             {{ if .Seats }}{{ .Seats }} seats{{ end }}
             {{ if .Transmission }} &middot; {{ .Transmission }}{{ end }}
@@ -31,7 +33,10 @@
             <div class="price">${{ dollars .DailyRateCents }}<small>/day</small></div>
             {{ if gt .DepositCents 0 }}<span class="badge">Deposit ${{ dollars .DepositCents }}</span>{{ end }}
           </div>
-          <a href="/book?v={{ .ID }}&from={{ $.From }}&to={{ $.To }}" class="btn" style="margin-top: 14px; width: 100%; text-align: center;">Book now</a>
+          <div style="display:flex; gap:8px; margin-top: 14px;">
+            <a href="/vehicles/{{ .ID }}?from={{ $.From }}&to={{ $.To }}" class="btn secondary" style="flex:1; text-align:center;">View details</a>
+            <a href="/book?v={{ .ID }}&from={{ $.From }}&to={{ $.To }}" class="btn" style="flex:1; text-align:center;">Book now</a>
+          </div>
         </div>
       </article>
       {{ end }}

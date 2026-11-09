@@ -137,6 +137,7 @@ func Load() (*Templates, error) {
 	pages := []page{
 		{"public/home.html",            "templates/public/home.html",            "templates/layouts/public.html"},
 		{"public/search.html",          "templates/public/search.html",          "templates/layouts/public.html"},
+		{"public/vehicle.html",         "templates/public/vehicle.html",         "templates/layouts/public.html"},
 		{"public/book.html",            "templates/public/book.html",            "templates/layouts/public.html"},
 		{"public/confirm.html",         "templates/public/confirm.html",         "templates/layouts/public.html"},
 		{"public/portal_login.html",    "templates/public/portal_login.html",    "templates/layouts/public.html"},

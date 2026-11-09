@@ -52,6 +52,7 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request, name string, ti
 	if data == nil {
 		data = map[string]any{}
 	}
+	data["Public"] = strings.HasPrefix(name, "public/")
 	data["Title"] = title
 	data["Active"] = active
 	if s, ok := From(r); ok {
@@ -193,6 +194,90 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 	data["Results"] = out
 	data["Searched"] = true
 	h.render(w, r, "public/search.html", "Available cars", "", data)
+}
+
+// VehiclePublicDetail renders a rich public page for one vehicle: specs,
+// photo carousel, feature list, rate. Date inputs pre-fill from ?from=&to=
+// (if the customer came from /search).
+func (h *Handler) VehiclePublicDetail(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	type veh struct {
+		ID             uuid.UUID
+		Make, Model    string
+		Year           int
+		Trim           *string
+		Seats          *int
+		Transmission   *string
+		FuelType       *string
+		ColorExterior  *string
+		DailyRateCents int
+		DepositCents   int
+		CompanyName    string
+		Status         string
+	}
+	var v veh
+	err := h.Pool.QueryRow(r.Context(), `
+		SELECT v.id, COALESCE(v.make,''), COALESCE(v.model,''), COALESCE(v.year,0),
+		       v.trim, v.seats, v.transmission, v.fuel_type, v.color_exterior,
+		       v.daily_rate_cents, v.deposit_cents, c.name, v.status
+		FROM vehicles v JOIN companies c ON c.id=v.company_id
+		WHERE v.id=$1 AND c.status='active'
+	`, id).Scan(&v.ID, &v.Make, &v.Model, &v.Year, &v.Trim, &v.Seats, &v.Transmission,
+		&v.FuelType, &v.ColorExterior, &v.DailyRateCents, &v.DepositCents, &v.CompanyName, &v.Status)
+	if err != nil {
+		http.Redirect(w, r, "/search", http.StatusSeeOther)
+		return
+	}
+	// Photos ordered: primary first, then by display_order.
+	type photo struct{ URL, Caption string }
+	photos := []photo{}
+	rows, _ := h.Pool.Query(r.Context(), `
+		SELECT file_path, COALESCE(caption,'') FROM vehicle_photos
+		WHERE vehicle_id=$1 ORDER BY is_primary DESC, display_order ASC, created_at ASC
+	`, v.ID)
+	if rows != nil {
+		for rows.Next() {
+			var p photo
+			if err := rows.Scan(&p.URL, &p.Caption); err == nil {
+				p.URL = "/uploads/" + p.URL
+				photos = append(photos, p)
+			}
+		}
+		rows.Close()
+	}
+	// Features map (stored as JSON {code:true}).
+	var featRaw []byte
+	_ = h.Pool.QueryRow(r.Context(), `SELECT features FROM vehicles WHERE id=$1`, v.ID).Scan(&featRaw)
+	features := []string{}
+	if len(featRaw) > 0 {
+		m := map[string]bool{}
+		if jsonUnmarshal(featRaw, &m) == nil {
+			for k, on := range m {
+				if on {
+					features = append(features, k)
+				}
+			}
+		}
+	}
+
+	now := time.Now().Add(2 * time.Hour).Truncate(time.Hour)
+	later := now.Add(2 * 24 * time.Hour)
+	fromStr := r.URL.Query().Get("from")
+	toStr := r.URL.Query().Get("to")
+	if fromStr == "" {
+		fromStr = now.Format("2006-01-02T15:04")
+	}
+	if toStr == "" {
+		toStr = later.Format("2006-01-02T15:04")
+	}
+
+	h.render(w, r, "public/vehicle.html", fmt.Sprintf("%d %s %s", v.Year, v.Make, v.Model), "", map[string]any{
+		"V":        v,
+		"Photos":   photos,
+		"Features": features,
+		"From":     fromStr,
+		"To":       toStr,
+	})
 }
 
 type bookVehicle struct {

@@ -1,0 +1,186 @@
+{{define "content"}}
+<style>
+  .vd-wrap { max-width: 1180px; margin: 24px auto; padding: 0 20px; }
+  .vd-top { display:grid; grid-template-columns: 1.3fr 1fr; gap: 28px; }
+  @media (max-width:960px){ .vd-top { grid-template-columns: 1fr; } }
+
+  /* Slider */
+  .slider { position:relative; border-radius:16px; overflow:hidden; background:#0a0a0a; aspect-ratio: 16/10; }
+  .slider .slides { display:flex; height:100%; transition: transform 0.4s cubic-bezier(.4,0,.2,1); }
+  .slider .slide { flex:0 0 100%; height:100%; display:flex; align-items:center; justify-content:center; background:#0a0a0a; position:relative; }
+  .slider .slide img { width:100%; height:100%; object-fit:cover; }
+  .slider .placeholder { font-size:80px; color:#444; }
+  .slider .caption { position:absolute; bottom:0; left:0; right:0; padding:16px 20px; background:linear-gradient(0deg,rgba(0,0,0,.75),transparent); color:#fff; font-size:13.5px; }
+  .slider .arrow { position:absolute; top:50%; transform:translateY(-50%); background:rgba(255,255,255,.95); color:#0a0a0a; border:0; width:44px; height:44px; border-radius:50%; cursor:pointer; font-size:18px; display:grid; place-items:center; box-shadow:0 4px 14px rgba(0,0,0,.25); transition: all 0.15s; }
+  .slider .arrow:hover { background:#dc2626; color:#fff; }
+  .slider .arrow.prev { left:16px; }
+  .slider .arrow.next { right:16px; }
+  .slider .dots { position:absolute; bottom:14px; left:50%; transform:translateX(-50%); display:flex; gap:6px; z-index:2; }
+  .slider .dot { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.4); border:0; padding:0; cursor:pointer; transition: all 0.2s; }
+  .slider .dot.active { background:#dc2626; width:24px; border-radius:4px; }
+  .slider .counter { position:absolute; top:14px; right:14px; background:rgba(0,0,0,.6); color:#fff; font-size:12px; padding:4px 10px; border-radius:999px; font-weight:600; }
+
+  /* Thumbnail strip */
+  .thumbs { display:flex; gap:8px; margin-top:10px; overflow-x:auto; scroll-snap-type: x proximity; }
+  .thumbs .t { flex:0 0 90px; height:60px; border-radius:8px; overflow:hidden; cursor:pointer; opacity:.55; border:2px solid transparent; transition:all 0.15s; scroll-snap-align:start; background:#f3f4f6; }
+  .thumbs .t img { width:100%; height:100%; object-fit:cover; }
+  .thumbs .t.active { opacity:1; border-color:#dc2626; }
+  .thumbs .t:hover { opacity:1; }
+
+  /* Right panel */
+  .book-card { background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:22px; box-shadow:0 10px 30px rgba(0,0,0,.06); }
+  .book-card h1 { margin:0 0 4px; font-size:26px; letter-spacing:-0.02em; }
+  .book-card .sub { color:#6b7280; font-size:13.5px; margin-bottom:14px; }
+  .book-card .price { display:flex; align-items:baseline; gap:6px; margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid #e5e7eb; }
+  .book-card .price .amt { font-size:38px; font-weight:800; color:#dc2626; letter-spacing:-0.03em; }
+  .book-card .price .per { color:#6b7280; font-size:14px; }
+  .book-card label { display:block; font-size:11px; letter-spacing:1.5px; color:#6b7280; text-transform:uppercase; font-weight:700; margin:12px 0 4px; }
+  .book-card input { width:100%; padding:11px 12px; border:1.5px solid #e5e7eb; border-radius:8px; font-size:14px; }
+  .book-card button { width:100%; margin-top:16px; padding:14px; background:#dc2626; color:#fff; border:0; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; letter-spacing:.2px; transition:all 0.15s; }
+  .book-card button:hover { background:#b91c1c; box-shadow:0 10px 24px rgba(220,38,38,.3); transform:translateY(-1px); }
+  .book-card .deposit { margin-top:12px; padding:10px; background:#fef3c7; border-radius:8px; font-size:12.5px; color:#78350f; }
+
+  /* Specs card */
+  .specs { margin-top:30px; }
+  .specs h2 { font-size:22px; margin:0 0 16px; }
+  .spec-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px; }
+  .spec { background:#fafafa; border:1px solid #e5e7eb; border-radius:12px; padding:14px 16px; }
+  .spec .k { font-size:11px; letter-spacing:1.5px; color:#6b7280; text-transform:uppercase; font-weight:700; }
+  .spec .v { margin-top:4px; font-size:16px; font-weight:600; color:#0a0a0a; }
+
+  /* Features */
+  .feats { margin-top:30px; }
+  .feats-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:10px; }
+  .feat { display:flex; align-items:center; gap:10px; padding:12px 14px; background:#fafafa; border:1px solid #e5e7eb; border-radius:10px; font-size:14px; font-weight:500; }
+  .feat::before { content:"✓"; color:#dc2626; font-weight:800; font-size:16px; }
+
+  .status-pill { display:inline-block; padding:4px 12px; border-radius:999px; font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
+  .status-pill.available { background:#dcfce7; color:#166534; }
+  .status-pill.rented { background:#fee2e2; color:#8a1b1b; }
+</style>
+
+<div class="vd-wrap">
+  <div style="margin-bottom:14px;">
+    <a href="/search" style="color:#6b7280; text-decoration:none; font-size:13px;">← Back to search</a>
+  </div>
+
+  <div class="vd-top">
+    <!-- Image slider -->
+    <div>
+      <div class="slider" id="vSlider">
+        {{ if .Photos }}
+        <div class="counter"><span id="idx">1</span> / {{ len .Photos }}</div>
+        {{ end }}
+        <div class="slides" id="slides">
+          {{ range .Photos }}
+          <div class="slide">
+            <img src="{{ .URL }}" alt="{{ .Caption }}" loading="lazy">
+            {{ if .Caption }}<div class="caption">{{ .Caption }}</div>{{ end }}
+          </div>
+          {{ else }}
+          <div class="slide"><div class="placeholder">🚗</div></div>
+          {{ end }}
+        </div>
+        {{ if gt (len .Photos) 1 }}
+        <button class="arrow prev" onclick="slide(-1)" aria-label="Previous">‹</button>
+        <button class="arrow next" onclick="slide(1)" aria-label="Next">›</button>
+        <div class="dots" id="dots">
+          {{ range $i, $_ := .Photos }}<button class="dot {{ if eq $i 0 }}active{{ end }}" onclick="goTo({{ $i }})"></button>{{ end }}
+        </div>
+        {{ end }}
+      </div>
+
+      {{ if gt (len .Photos) 1 }}
+      <div class="thumbs" id="thumbs">
+        {{ range $i, $p := .Photos }}
+        <div class="t {{ if eq $i 0 }}active{{ end }}" onclick="goTo({{ $i }})"><img src="{{ $p.URL }}" alt="thumb"></div>
+        {{ end }}
+      </div>
+      {{ end }}
+    </div>
+
+    <!-- Book card -->
+    <aside class="book-card">
+      <div style="margin-bottom:6px;">
+        <span class="status-pill {{ if eq .V.Status "available" }}available{{ else }}rented{{ end }}">
+          {{ if eq .V.Status "available" }}Available now{{ else }}{{ .V.Status }}{{ end }}
+        </span>
+      </div>
+      <h1>{{ .V.Year }} {{ .V.Make }} {{ .V.Model }}</h1>
+      <div class="sub">{{ or (deref .V.Trim) "" }} {{ if .V.ColorExterior }}· {{ deref .V.ColorExterior }}{{ end }}</div>
+      <div class="price">
+        <span class="amt">${{ dollars .V.DailyRateCents }}</span>
+        <span class="per">/ day</span>
+      </div>
+
+      <form action="/book" method="get">
+        <input type="hidden" name="v" value="{{ .V.ID }}">
+        <label>Pickup</label>
+        <input type="datetime-local" name="from" value="{{ .From }}" required>
+        <label>Return</label>
+        <input type="datetime-local" name="to" value="{{ .To }}" required>
+        <button type="submit">Book this car →</button>
+      </form>
+
+      {{ if gt .V.DepositCents 0 }}
+      <div class="deposit">+ Refundable deposit <strong>${{ dollars .V.DepositCents }}</strong> held at pickup.</div>
+      {{ end }}
+    </aside>
+  </div>
+
+  <!-- Specs -->
+  <section class="specs">
+    <h2>Specifications</h2>
+    <div class="spec-grid">
+      {{ if .V.Seats }}<div class="spec"><div class="k">Seats</div><div class="v">{{ .V.Seats }}</div></div>{{ end }}
+      {{ if deref .V.Transmission }}<div class="spec"><div class="k">Transmission</div><div class="v">{{ deref .V.Transmission }}</div></div>{{ end }}
+      {{ if deref .V.FuelType }}<div class="spec"><div class="k">Fuel</div><div class="v">{{ deref .V.FuelType }}</div></div>{{ end }}
+      {{ if deref .V.ColorExterior }}<div class="spec"><div class="k">Color</div><div class="v">{{ deref .V.ColorExterior }}</div></div>{{ end }}
+      <div class="spec"><div class="k">Year</div><div class="v">{{ .V.Year }}</div></div>
+      <div class="spec"><div class="k">Operator</div><div class="v">{{ .V.CompanyName }}</div></div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  {{ if .Features }}
+  <section class="feats">
+    <h2>What's included</h2>
+    <div class="feats-grid">
+      {{ range .Features }}<div class="feat">{{ . }}</div>{{ end }}
+    </div>
+  </section>
+  {{ end }}
+</div>
+
+<script>
+  (function(){
+    const slides = document.getElementById('slides');
+    if (!slides) return;
+    const count = slides.children.length;
+    const dots = document.querySelectorAll('#dots .dot');
+    const thumbs = document.querySelectorAll('#thumbs .t');
+    const idx = document.getElementById('idx');
+    let i = 0;
+    function render(){
+      slides.style.transform = 'translateX(-' + (i*100) + '%)';
+      dots.forEach((d,n) => d.classList.toggle('active', n===i));
+      thumbs.forEach((t,n) => t.classList.toggle('active', n===i));
+      if (idx) idx.textContent = (i+1);
+    }
+    window.slide = function(dir){ i = (i + dir + count) % count; render(); };
+    window.goTo  = function(n){ i = n; render(); };
+    // Keyboard arrow navigation
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft') window.slide(-1);
+      if (e.key === 'ArrowRight') window.slide(1);
+    });
+    // Swipe on mobile
+    let sx = 0;
+    slides.addEventListener('touchstart', e => sx = e.touches[0].clientX);
+    slides.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - sx;
+      if (Math.abs(dx) > 40) window.slide(dx < 0 ? 1 : -1);
+    });
+  })();
+</script>
+{{end}}

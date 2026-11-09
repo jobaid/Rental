@@ -769,3 +769,262 @@ img, svg, video { max-width: 100%; height: auto; }
   .booking-steps .lbl { display: none; } /* Numbers only on tiny screens */
   .booking-steps .st.active .lbl { display: inline; } /* Show label of current step */
 }
+
+/* ===================================================================
+   CUSTOMER THEME — red / black / white with warm amber accent.
+   Scoped to body.public so admin stays teal.
+   =================================================================== */
+body.public {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #fafafa;
+  --surface-3: #f3f4f6;
+  --surface-dim: #f5f5f5;
+
+  --text: #0a0a0a;
+  --text-2: #1f2937;
+  --muted: #6b7280;
+  --muted-2: #9ca3af;
+
+  --accent: #dc2626;             /* strong red */
+  --accent-hover: #b91c1c;
+  --accent-contrast: #ffffff;
+  --accent-soft: #fee2e2;
+  --accent-tint: #fef2f2;
+  --highlight: #f59e0b;           /* warm amber — attractive accent */
+  --highlight-soft: #fef3c7;
+  --success: #16a34a;
+  --warn: #d97706;
+  --danger: #dc2626;
+  --info: #0a0a0a;
+
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --divider: #f3f4f6;
+
+  --ring: rgba(220, 38, 38, 0.25);
+  --shadow:    0 4px 14px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-lg: 0 20px 40px rgba(0,0,0,0.10), 0 4px 12px rgba(0,0,0,0.05);
+
+  background: #fff;
+  color: var(--text);
+}
+
+/* Header: deep black with red logo accent + red CTA button */
+body.public .site-header {
+  background: #0a0a0a;
+  color: #ffffff;
+  border-bottom: 3px solid #dc2626;
+  padding: 16px 32px;
+}
+body.public .site-header .logo {
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+body.public .site-header .logo::before {
+  content: "";
+  display: inline-block;
+  width: 10px; height: 10px;
+  background: #dc2626;
+  border-radius: 999px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+body.public .site-nav a {
+  color: #d4d4d4;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+body.public .site-nav a:hover { color: #ffffff; }
+body.public .site-nav a.btn {
+  background: #dc2626;
+  color: #ffffff;
+  padding: 7px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+body.public .site-nav a.btn:hover { background: #b91c1c; }
+body.public .site-nav a.btn.secondary {
+  background: transparent;
+  border: 1px solid #525252;
+  color: #ffffff;
+}
+body.public .nav-toggle {
+  border-color: #525252; color: #fff;
+}
+
+/* Buttons default: red primary, black ghost, white outline */
+body.public button, body.public .btn {
+  background: #dc2626;
+  color: #ffffff;
+  border: 0;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+}
+body.public button:hover, body.public .btn:hover {
+  background: #b91c1c;
+  box-shadow: 0 6px 16px rgba(220,38,38,0.25);
+  transform: translateY(-1px);
+}
+body.public button.secondary, body.public .btn.secondary {
+  background: #ffffff;
+  color: #0a0a0a;
+  border: 1.5px solid #0a0a0a;
+}
+body.public button.secondary:hover, body.public .btn.secondary:hover {
+  background: #0a0a0a;
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+}
+body.public button.ghost, body.public .btn.ghost {
+  background: transparent;
+  color: #0a0a0a;
+  border: 0;
+  padding: 10px 14px;
+}
+
+/* Hero — black background, red headline accent, white text */
+body.public .hero-wrap {
+  background: linear-gradient(135deg, #0a0a0a 0%, #1f1f1f 55%, #2a0b0b 100%);
+  color: #ffffff;
+  padding: 90px 24px 60px;
+  border-radius: 0 0 24px 24px;
+  margin-bottom: 40px;
+  overflow: hidden;
+  position: relative;
+}
+body.public .hero-wrap h1 { color: #ffffff; }
+body.public .hero-wrap h1 .accent {
+  background: linear-gradient(90deg, #dc2626, #f59e0b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+body.public .hero-wrap p { color: #d4d4d4; }
+body.public .scene .road {
+  background: linear-gradient(180deg, transparent 0%, #dc2626 45%, #1a0303 100%);
+}
+
+/* Search widget in hero — white surface floating on black */
+body.public .search-widget {
+  background: #ffffff;
+  padding: 18px;
+  border-radius: 14px;
+  box-shadow: 0 25px 50px rgba(0,0,0,0.35);
+  border: 1px solid #e5e7eb;
+}
+body.public .search-widget label { color: #6b7280; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 600; }
+body.public .search-widget input, body.public .search-widget select {
+  border: 1.5px solid #e5e7eb; background: #fafafa; color: #0a0a0a;
+}
+body.public .search-widget button { background: #dc2626; color: #fff; }
+
+/* Cards */
+body.public .card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+/* Vehicle result cards — polished, red accent on price */
+body.public .vehicle-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+  transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+}
+body.public .vehicle-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.10);
+  border-color: #0a0a0a;
+}
+body.public .vehicle-card .price { color: #dc2626; font-weight: 800; }
+body.public .vehicle-card .img { background-color: #f3f4f6; }
+body.public .vehicle-card .body h3 { color: #0a0a0a; }
+
+/* Badges + feature cards */
+body.public .badge.ok { background: #16a34a; color: #fff; }
+body.public .badge.warn { background: #f59e0b; color: #0a0a0a; }
+body.public .feature-card .ic {
+  background: #dc2626; color: #ffffff;
+  border-radius: 10px;
+}
+body.public .feature-card h3 { color: #0a0a0a; }
+
+/* Steps — black numbered circles, red when active */
+body.public .step h4 { color: #0a0a0a; }
+body.public .step::before { background: #0a0a0a; color: #ffffff; }
+body.public .booking-steps .num { background: #e5e7eb; color: #0a0a0a; }
+body.public .booking-steps .st.active .num {
+  background: #dc2626; color: #fff; box-shadow: 0 4px 10px rgba(220,38,38,0.35);
+}
+body.public .booking-steps .st.done .num { background: #16a34a; color: #fff; }
+body.public .booking-steps .st.active .lbl { color: #dc2626; }
+
+/* Section titles */
+body.public .section-title h2 { color: #0a0a0a; letter-spacing: -0.02em; }
+body.public .section-title h2::after {
+  content: "";
+  display: block;
+  width: 60px; height: 3px;
+  background: #dc2626;
+  margin: 12px auto 0;
+  border-radius: 2px;
+}
+
+/* Testimonial block */
+body.public .testimonial {
+  background: #0a0a0a;
+  color: #fff;
+  border: 0;
+  border-radius: 18px;
+  padding: 44px 30px;
+}
+body.public .testimonial blockquote { color: #ffffff; }
+body.public .testimonial cite { color: #dc2626; font-weight: 600; }
+
+/* Footer — black with red top border */
+body.public .site-footer {
+  background: #0a0a0a;
+  color: #a3a3a3;
+  border-top: 3px solid #dc2626;
+}
+body.public .site-footer a { color: #d4d4d4; text-decoration: none; }
+body.public .site-footer a:hover { color: #ffffff; }
+body.public .site-footer h4 { color: #ffffff; }
+body.public .site-footer div[style*="font-weight: 800"] { color: #ffffff !important; }
+
+/* Page hero on About/FAQ/etc */
+body.public .page-hero {
+  background: linear-gradient(135deg, #0a0a0a 0%, #2a0b0b 100%);
+  color: #ffffff;
+  border-radius: 0 0 20px 20px;
+  padding: 56px 24px;
+}
+body.public .page-hero h1 { color: #ffffff; }
+body.public .page-hero p { color: #d4d4d4; }
+
+/* Forms — subtle inputs, red focus ring */
+body.public input, body.public select, body.public textarea {
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #ffffff;
+  color: #0a0a0a;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+body.public input:focus, body.public select:focus, body.public textarea:focus {
+  outline: 0;
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220,38,38,0.15);
+}
+
+/* Portal pages — red hero gradient */
+body.public .pr-hero { background: linear-gradient(135deg,#0a0a0a,#dc2626); }
+body.public .fp-hero { background: linear-gradient(135deg,#0a0a0a,#dc2626); }
+

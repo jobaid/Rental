@@ -88,6 +88,7 @@ func main() {
 	// Public site.
 	r.Get("/", web.Home)
 	r.Get("/search", web.Search)
+	r.Get("/vehicles/{id}", web.VehiclePublicDetail)
 	r.Get("/book", web.BookGet)
 	r.Post("/book", web.BookPost)
 	r.Get("/portal/login", web.PortalLoginGet)
