@@ -172,6 +172,8 @@ func main() {
 		r.Post("/admin/vehicles/{id}/photos/{pid}/delete", web.VehiclePhotoDelete)
 		r.Post("/admin/vehicles/{id}/photos/{pid}/primary", web.VehiclePhotoMakePrimary)
 		r.Post("/admin/vehicles/{id}/rate", web.VehicleRateUpdate)
+		r.Post("/admin/vehicles/{id}/ready", web.VehicleMarkReady)
+		r.Post("/admin/vehicles/{id}/status", web.VehicleStatus)
 		r.Post("/admin/vehicles/{id}/rate-periods", web.RatePeriodCreate)
 		r.Post("/admin/vehicles/{id}/rate-periods/{rid}/delete", web.RatePeriodDelete)
 		r.Post("/admin/vehicles/{id}/features", web.VehicleFeaturesPost)

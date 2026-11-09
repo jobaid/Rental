@@ -149,6 +149,50 @@ func (h *Handler) RatePeriodCreate(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin/vehicles/"+vid+"?flash=Rate+period+added#rates", http.StatusSeeOther)
 }
 
+// VehicleMarkReady flips the vehicle back to 'available' — the status that
+// makes it appear in customer search. Used after a return inspection or any
+// out-of-service maintenance is done. Also clears the current rental's
+// vehicle so a new booking can take it.
+func (h *Handler) VehicleMarkReady(w http.ResponseWriter, r *http.Request) {
+	s, _ := From(r)
+	cid := *s.CompanyID
+	vid := chi.URLParam(r, "id")
+	_, err := h.Pool.Exec(r.Context(),
+		`UPDATE vehicles SET status='available', updated_at=NOW() WHERE company_id=$1 AND id=$2`,
+		cid, vid)
+	if err != nil {
+		http.Redirect(w, r, "/admin/vehicles/"+vid+"?err="+err.Error(), http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/admin/vehicles/"+vid+"?flash=Vehicle+available+for+rent", http.StatusSeeOther)
+}
+
+// VehicleStatus is the generic status-flip (manager puts a car into
+// maintenance / out_of_service etc).
+func (h *Handler) VehicleStatus(w http.ResponseWriter, r *http.Request) {
+	s, _ := From(r)
+	cid := *s.CompanyID
+	vid := chi.URLParam(r, "id")
+	_ = r.ParseForm()
+	st := strings.TrimSpace(r.FormValue("status"))
+	allowed := map[string]bool{
+		"available": true, "maintenance": true, "out_of_service": true, "inactive": true,
+		"inspection_pending": true,
+	}
+	if !allowed[st] {
+		http.Redirect(w, r, "/admin/vehicles/"+vid+"?err=Invalid+status", http.StatusSeeOther)
+		return
+	}
+	_, err := h.Pool.Exec(r.Context(),
+		`UPDATE vehicles SET status=$1, updated_at=NOW() WHERE company_id=$2 AND id=$3`,
+		st, cid, vid)
+	if err != nil {
+		http.Redirect(w, r, "/admin/vehicles/"+vid+"?err="+err.Error(), http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/admin/vehicles/"+vid+"?flash=Status+updated", http.StatusSeeOther)
+}
+
 // VehicleRateUpdate updates the vehicle's default daily rate (and optional
 // deposit). No date range — this is the base rate used when no rate period
 // matches the pickup date. For season pricing, use rate periods instead.

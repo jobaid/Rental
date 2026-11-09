@@ -14,6 +14,39 @@
 {{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
 {{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
 
+{{ if ne .V.Status "available" }}
+<div class="card" style="background:linear-gradient(135deg,#fef3c7,#fde68a); border:1px solid #f59e0b; margin-bottom:16px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+    <div>
+      <div style="font-size:11px; letter-spacing:2px; text-transform:uppercase; color:#92400e; font-weight:700;">Not on the market</div>
+      <h3 style="margin:4px 0 2px; color:#78350f;">This vehicle is currently <code style="background:#fff; padding:2px 8px; border-radius:4px;">{{ .V.Status }}</code></h3>
+      <p class="muted" style="margin:4px 0 0; font-size:13px;">Customers can't find it in search. Click <strong>Ready for rent</strong> once the car is inspected, cleaned, and fueled.</p>
+    </div>
+    <form method="post" action="/admin/vehicles/{{ .V.ID }}/ready" style="display:inline;">
+      <button style="background:#166534; color:#fff; border:0; padding:12px 24px; border-radius:8px; font-weight:700; font-size:15px; cursor:pointer;">
+        ✓ Ready for rent
+      </button>
+    </form>
+  </div>
+</div>
+{{ else }}
+<div class="card" style="background:#dcfce7; border:1px solid #166534; margin-bottom:16px; padding:10px 16px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+    <div><strong style="color:#166534;">✓ Available for rent</strong> <span class="muted" style="font-size:13px;">— showing in customer search.</span></div>
+    <div style="display:flex; gap:6px;">
+      <form method="post" action="/admin/vehicles/{{ .V.ID }}/status" style="display:inline;">
+        <input type="hidden" name="status" value="maintenance">
+        <button class="ghost small" style="font-size:12px;">→ Maintenance</button>
+      </form>
+      <form method="post" action="/admin/vehicles/{{ .V.ID }}/status" style="display:inline;">
+        <input type="hidden" name="status" value="out_of_service">
+        <button class="ghost small" style="font-size:12px;">→ Out of service</button>
+      </form>
+    </div>
+  </div>
+</div>
+{{ end }}
+
 <div class="row">
   <!-- LEFT: Photo gallery + specs -->
   <div>

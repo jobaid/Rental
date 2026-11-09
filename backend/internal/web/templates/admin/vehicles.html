@@ -15,7 +15,14 @@
       <td class="muted">{{ or .LicensePlate "—" }}</td>
       <td><a href="/admin/vehicles/{{ .ID }}"><strong>{{ .Year }} {{ .Make }} {{ .Model }}</strong></a></td>
       <td>${{ dollars .DailyRateCents }}</td>
-      <td><span class="badge {{ if eq .Status "available" }}ok{{ else }}warn{{ end }}">{{ .Status }}</span></td>
+      <td>
+        <span class="badge {{ if eq .Status "available" }}ok{{ else }}warn{{ end }}">{{ .Status }}</span>
+        {{ if or (eq .Status "inspection_pending") (eq .Status "maintenance") }}
+        <form method="post" action="/admin/vehicles/{{ .ID }}/ready" style="display:inline; margin-left:4px;">
+          <button class="small" style="background:#166534; color:#fff; padding:2px 8px; font-size:11px; font-weight:700;">✓ Ready</button>
+        </form>
+        {{ end }}
+      </td>
       <td class="muted">{{ or .OdometerKm 0 }} km</td>
       <td><a href="/admin/vehicles/{{ .ID }}" class="btn secondary small">📷 Photos</a></td>
     </tr>
