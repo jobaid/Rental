@@ -58,7 +58,7 @@ func renderAgreementHTML(h *Handler, title, body, booking string, brand Brand) s
 		if !strings.HasPrefix(src, "http") && h.PublicBase != "" {
 			src = strings.TrimRight(h.PublicBase, "/") + src
 		}
-		logo = `<img src="` + src + `" alt="" style="height:40px;width:auto;object-fit:contain;background:#fff;padding:2px 6px;border-radius:4px;">`
+		logo = `<span style="display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a0a0a 0%,#2a0b0b 55%,#dc2626 100%);padding:8px 14px;border-radius:8px;border:2px solid rgba(255,255,255,.18);box-shadow:0 4px 14px rgba(220,38,38,.35);min-width:80px;min-height:56px;"><img src="` + src + `" alt="` + htmlEscape(brand.Name) + `" style="display:block;max-height:52px;max-width:180px;width:auto;height:auto;object-fit:contain;filter:drop-shadow(0 0 1px rgba(255,255,255,.4));"></span>`
 	}
 	mark := strings.ToUpper(firstRunes(brand.Name, 2))
 	if mark == "" {

@@ -856,7 +856,8 @@ body{margin:0;background:#eceef2;color:var(--ink);font-family:-apple-system,Blin
 .band{background:var(--band-bg);color:#ffffff;padding:22px 44px;display:flex;justify-content:space-between;align-items:center;gap:24px;border-bottom:4px solid var(--band-accent)}
 .band .brand{display:flex;align-items:center;gap:14px}
 .band .mark{width:44px;height:44px;border:2px solid #ffffff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;letter-spacing:1px;border-radius:4px;background:var(--band-accent)}
-.band .logo-img{height:40px;width:auto;object-fit:contain;background:#fff;padding:2px 6px;border-radius:4px}
+.band .logo-wrap{display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a0a0a 0%,#2a0b0b 55%,#dc2626 100%);padding:8px 14px;border-radius:8px;border:2px solid rgba(255,255,255,.18);box-shadow:0 4px 14px rgba(220,38,38,.35);min-width:80px;min-height:56px}
+.band .logo-img{display:block;max-height:52px;max-width:180px;width:auto;height:auto;object-fit:contain;filter:drop-shadow(0 0 1px rgba(255,255,255,.4))}
 .band .doc .num{color:var(--band-accent)}
 .totals .r.grand{border-top-color:var(--accent)}
 .sec-title{color:var(--accent)}
@@ -995,7 +996,7 @@ func (h *Handler) renderInvoiceHTML(inv *Invoice, message string, forEmail bool)
 		if !strings.HasPrefix(src, "http") && h.PublicBase != "" {
 			src = strings.TrimRight(h.PublicBase, "/") + src
 		}
-		buf.WriteString(`<img src="` + esc(src) + `" alt="" class="logo-img">`)
+		buf.WriteString(`<span class="logo-wrap"><img src="` + esc(src) + `" alt="` + esc(inv.CompanyName) + `" class="logo-img"></span>`)
 	} else {
 		buf.WriteString(`<div class="mark">` + esc(mark) + `</div>`)
 	}
