@@ -133,9 +133,9 @@
     <h2>Specifications</h2>
     <div class="spec-grid">
       {{ if .V.Seats }}<div class="spec"><div class="k">Seats</div><div class="v">{{ .V.Seats }}</div></div>{{ end }}
-      {{ if deref .V.Transmission }}<div class="spec"><div class="k">Transmission</div><div class="v">{{ deref .V.Transmission }}</div></div>{{ end }}
-      {{ if deref .V.FuelType }}<div class="spec"><div class="k">Fuel</div><div class="v">{{ deref .V.FuelType }}</div></div>{{ end }}
-      {{ if deref .V.ColorExterior }}<div class="spec"><div class="k">Color</div><div class="v">{{ deref .V.ColorExterior }}</div></div>{{ end }}
+      {{ if deref .V.Transmission }}<div class="spec"><div class="k">Transmission</div><div class="v">{{ prettyFeature (deref .V.Transmission) }}</div></div>{{ end }}
+      {{ if deref .V.FuelType }}<div class="spec"><div class="k">Fuel</div><div class="v">{{ prettyFeature (deref .V.FuelType) }}</div></div>{{ end }}
+      {{ if deref .V.ColorExterior }}<div class="spec"><div class="k">Color</div><div class="v">{{ prettyFeature (deref .V.ColorExterior) }}</div></div>{{ end }}
       <div class="spec"><div class="k">Year</div><div class="v">{{ .V.Year }}</div></div>
       <div class="spec"><div class="k">Operator</div><div class="v">{{ .V.CompanyName }}</div></div>
     </div>
@@ -146,7 +146,7 @@
   <section class="feats">
     <h2>What's included</h2>
     <div class="feats-grid">
-      {{ range .Features }}<div class="feat">{{ . }}</div>{{ end }}
+      {{ range .Features }}<div class="feat">{{ prettyFeature . }}</div>{{ end }}
     </div>
   </section>
   {{ end }}

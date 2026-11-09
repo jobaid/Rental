@@ -77,6 +77,9 @@ type Invoice struct {
 	CheckoutFuelPct *int
 	CheckinFuelPct  *int
 	CompanyName     string
+	CompanyLogoURL  string
+	CompanyPhone    string
+	CompanyEmail    string
 	BranchName      string
 	BranchAddr      string
 	InsuranceName   string
@@ -436,6 +439,25 @@ func (h *Handler) loadInvoice(ctx context.Context, cid, id uuid.UUID) (*Invoice,
 		`SELECT name, COALESCE(address,'')||CASE WHEN city IS NULL OR city='' THEN '' ELSE ', '||city END
 		   FROM branches WHERE company_id=$1 AND is_active ORDER BY created_at LIMIT 1`,
 		cid).Scan(&inv.BranchName, &inv.BranchAddr)
+	// Brand (logo + contact) — stored in settings.general.
+	{
+		var raw []byte
+		if err := h.Pool.QueryRow(ctx,
+			`SELECT value FROM settings WHERE company_id=$1 AND key='general'`, cid).Scan(&raw); err == nil {
+			m := map[string]any{}
+			if jsonUnmarshal(raw, &m) == nil {
+				get := func(k string) string {
+					if v, ok := m[k].(string); ok {
+						return v
+					}
+					return ""
+				}
+				inv.CompanyLogoURL = get("logoUrl")
+				inv.CompanyPhone = get("phone")
+				inv.CompanyEmail = get("email")
+			}
+		}
+	}
 	// Items.
 	rows, err := h.Pool.Query(ctx, `
 		SELECT id, description, quantity_x100, unit_price_cents, amount_cents, sort_order, toll_transaction_id
@@ -826,14 +848,20 @@ func (h *Handler) InvoicePublic(w http.ResponseWriter, r *http.Request) {
 // =============================================================================
 
 const invoiceCSS = `
-:root{--ink:#0a0a0a;--muted:#5f6b7a;--line:#d9dde3;--softline:#eef1f5;--band:#f6f7f9;--accent:#0b3d2e;--accent-ink:#ffffff;--grand:#0a0a0a;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+:root{--ink:#0a0a0a;--muted:#5f6b7a;--line:#e5e7eb;--softline:#f3f4f6;--band:#f9fafb;--accent:#dc2626;--accent-ink:#ffffff;--band-bg:#0a0a0a;--band-accent:#dc2626;--grand:#0a0a0a;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
 *{box-sizing:border-box}
 body{margin:0;background:#eceef2;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,sans-serif;line-height:1.45;font-size:13.5px;-webkit-font-smoothing:antialiased}
 .sheet{max-width:900px;margin:28px auto;background:#fff;border:1px solid var(--line);box-shadow:0 1px 2px rgba(0,0,0,.05)}
 /* Header band */
-.band{background:var(--accent);color:var(--accent-ink);padding:22px 44px;display:flex;justify-content:space-between;align-items:center;gap:24px}
+.band{background:var(--band-bg);color:#ffffff;padding:22px 44px;display:flex;justify-content:space-between;align-items:center;gap:24px;border-bottom:4px solid var(--band-accent)}
 .band .brand{display:flex;align-items:center;gap:14px}
-.band .mark{width:44px;height:44px;border:2px solid var(--accent-ink);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;letter-spacing:1px;border-radius:4px}
+.band .mark{width:44px;height:44px;border:2px solid #ffffff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;letter-spacing:1px;border-radius:4px;background:var(--band-accent)}
+.band .logo-img{height:40px;width:auto;object-fit:contain;background:#fff;padding:2px 6px;border-radius:4px}
+.band .doc .num{color:var(--band-accent)}
+.totals .r.grand{border-top-color:var(--accent)}
+.sec-title{color:var(--accent)}
+.notes{border-left-color:var(--accent)}
+.terms h4{color:var(--accent)}
 .band .co{font-size:19px;font-weight:700;letter-spacing:.3px}
 .band .co small{display:block;font-weight:400;font-size:11px;opacity:.78;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
 .band .doc{text-align:right}
@@ -959,7 +987,19 @@ func (h *Handler) renderInvoiceHTML(inv *Invoice, message string, forEmail bool)
 	if inv.IssuedAt != nil {
 		issued = *inv.IssuedAt
 	}
-	buf.WriteString(`<div class="band"><div class="brand"><div class="mark">` + esc(mark) + `</div><div class="co">` + esc(inv.CompanyName))
+	buf.WriteString(`<div class="band"><div class="brand">`)
+	if inv.CompanyLogoURL != "" {
+		// Absolute URL via PublicBase if we have one, so emails render the
+		// logo from the live server rather than a relative path.
+		src := inv.CompanyLogoURL
+		if !strings.HasPrefix(src, "http") && h.PublicBase != "" {
+			src = strings.TrimRight(h.PublicBase, "/") + src
+		}
+		buf.WriteString(`<img src="` + esc(src) + `" alt="" class="logo-img">`)
+	} else {
+		buf.WriteString(`<div class="mark">` + esc(mark) + `</div>`)
+	}
+	buf.WriteString(`<div class="co">` + esc(inv.CompanyName))
 	buf.WriteString(`<small>Vehicle Rental Services</small></div></div>`)
 	buf.WriteString(`<div class="doc"><div class="kind">` + esc(strings.ToUpper(inv.KindLabel())) + `</div>`)
 	buf.WriteString(`<div class="num">` + esc(inv.Number) + `</div>`)
@@ -1057,7 +1097,7 @@ func (h *Handler) renderInvoiceHTML(inv *Invoice, message string, forEmail bool)
 	if !forEmail && inv.Status != "paid" && inv.Status != "void" && inv.TotalCents > 0 {
 		buf.WriteString(`<div style="padding:18px 44px 8px; text-align:center;">`)
 		buf.WriteString(`<form method="post" action="/invoices/` + esc(inv.PublicToken) + `/pay" style="display:inline;">`)
-		buf.WriteString(`<button type="submit" style="background:#635bff;color:#fff;border:0;padding:14px 32px;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;letter-spacing:.2px;">💳 Pay ` + fmtD(inv.TotalCents) + ` with Stripe</button>`)
+		buf.WriteString(`<button type="submit" style="background:#dc2626;color:#fff;border:0;padding:14px 32px;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;letter-spacing:.2px;">💳 Pay ` + fmtD(inv.TotalCents) + ` with Stripe</button>`)
 		buf.WriteString(`</form>`)
 		buf.WriteString(`<div style="font-size:11.5px;color:#6b7280;margin-top:8px;">Secure card payment via Stripe. We never see your card details.</div>`)
 		buf.WriteString(`</div>`)
