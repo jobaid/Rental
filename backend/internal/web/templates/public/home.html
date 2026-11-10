@@ -31,48 +31,171 @@
 
     <!-- Road + car -->
     <div class="road"></div>
-    <svg class="car" viewBox="0 0 220 90" width="240" height="100">
-      <!-- Shadow -->
-      <ellipse cx="110" cy="85" rx="88" ry="5" fill="#000" opacity=".18"/>
-      <!-- Body -->
-      <path d="M20,62 L30,36 C32,30 36,28 42,28 L96,28 L116,16 C120,13 125,12 130,12 L170,12 C180,12 188,18 196,30 L210,42 C212,45 212,50 210,54 L204,62 L20,62 Z"
-            fill="#0f3d3e" stroke="#06212a" stroke-width="1.2"/>
-      <!-- Window gradient -->
+
+    <!-- Speed streaks behind the car -->
+    <div class="speed-lines" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <!-- Exhaust puffs -->
+    <div class="exhaust" aria-hidden="true">
+      <span></span><span></span><span></span>
+    </div>
+
+    <!-- Headlight beam shining forward onto the road -->
+    <div class="headlight-beam" aria-hidden="true"></div>
+
+    <svg class="car" viewBox="0 0 280 110" width="300" height="118" preserveAspectRatio="xMidYMid meet">
       <defs>
-        <linearGradient id="win" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0" stop-color="#9fd1d1"/>
-          <stop offset="1" stop-color="#c8e4e3"/>
+        <!-- Metallic red body gradient -->
+        <linearGradient id="bodyRed" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0"   stop-color="#ff5a68"/>
+          <stop offset="0.35" stop-color="#dc2626"/>
+          <stop offset="0.75" stop-color="#9b1420"/>
+          <stop offset="1"    stop-color="#5f0912"/>
         </linearGradient>
-        <linearGradient id="rim" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0" stop-color="#9aa5ad"/>
-          <stop offset="1" stop-color="#5c6670"/>
+        <!-- Darker lower rocker panel -->
+        <linearGradient id="rocker" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stop-color="#2a0b0b"/>
+          <stop offset="1" stop-color="#0a0a0a"/>
+        </linearGradient>
+        <!-- Glass tint -->
+        <linearGradient id="glass" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stop-color="#2b3a46"/>
+          <stop offset="0.5" stop-color="#4a6678"/>
+          <stop offset="1" stop-color="#1a2530"/>
+        </linearGradient>
+        <!-- Chrome trim -->
+        <linearGradient id="chrome" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stop-color="#f3f4f6"/>
+          <stop offset="0.5" stop-color="#9ca3af"/>
+          <stop offset="1" stop-color="#4b5563"/>
+        </linearGradient>
+        <!-- Alloy wheel face -->
+        <radialGradient id="wheelFace" cx="50%" cy="50%" r="50%">
+          <stop offset="0"   stop-color="#e5e7eb"/>
+          <stop offset="0.65" stop-color="#6b7280"/>
+          <stop offset="1"   stop-color="#1f2937"/>
+        </radialGradient>
+        <radialGradient id="tyre" cx="50%" cy="45%" r="55%">
+          <stop offset="0"   stop-color="#2a2a2a"/>
+          <stop offset="1"   stop-color="#060606"/>
+        </radialGradient>
+        <!-- Headlight glow -->
+        <radialGradient id="headGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0"   stop-color="#fffbe6"/>
+          <stop offset="0.5" stop-color="#ffd166"/>
+          <stop offset="1"   stop-color="#ffd166" stop-opacity="0"/>
+        </radialGradient>
+        <!-- Body highlight sheen -->
+        <linearGradient id="sheen" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0"   stop-color="#fff" stop-opacity=".0"/>
+          <stop offset="0.45" stop-color="#fff" stop-opacity=".25"/>
+          <stop offset="0.55" stop-color="#fff" stop-opacity=".0"/>
         </linearGradient>
       </defs>
-      <!-- Front window -->
-      <path d="M118,22 L164,22 C170,22 176,25 180,30 L192,42 L120,42 Z" fill="url(#win)"/>
+
+      <!-- Ground shadow (dynamic) -->
+      <ellipse class="car-shadow" cx="140" cy="102" rx="110" ry="6" fill="#000" opacity=".3"/>
+
+      <!-- Lower rocker panel (darker strip under the doors) -->
+      <path d="M22,78 L256,78 L250,86 L30,86 Z" fill="url(#rocker)"/>
+
+      <!-- Main body (sedan silhouette with hood → windshield → roof arc → trunk) -->
+      <path d="
+        M22,78
+        L30,52
+        C33,44 38,40 48,38
+        L96,36
+        L130,20
+        C136,16 142,15 150,15
+        L198,15
+        C212,15 224,22 232,34
+        L252,52
+        C258,58 260,64 258,70
+        L256,78 Z"
+        fill="url(#bodyRed)" stroke="#2a0b0b" stroke-width="1.2" stroke-linejoin="round"/>
+
+      <!-- Body sheen highlight -->
+      <path d="
+        M28,62
+        L40,44
+        C44,39 50,37 56,36
+        L140,26
+        L202,26
+        C216,28 224,34 228,42
+        L240,56 Z"
+        fill="url(#sheen)"/>
+
+      <!-- Chrome window trim -->
+      <path d="M58,36 L96,36 L128,23 L196,23 L220,36 L218,38 L198,38 L196,25 L130,25 L98,38 Z"
+            fill="url(#chrome)" opacity=".8"/>
+
       <!-- Rear window -->
-      <path d="M48,32 L96,32 L96,42 L50,42 Z" fill="url(#win)"/>
-      <!-- Door line + handle -->
-      <line x1="108" y1="42" x2="108" y2="62" stroke="#06212a" stroke-width="1" opacity=".4"/>
-      <rect x="86" y="48" width="12" height="2.5" rx="1" fill="#06212a" opacity=".5"/>
-      <!-- Head/tail lights -->
-      <rect x="203" y="46" width="7" height="5" rx="2" fill="#ffd166"/>
-      <rect x="20" y="46" width="6" height="5" rx="2" fill="#e23b4e"/>
-      <!-- Wheels -->
-      <g transform="translate(58, 62)">
-        <circle r="12" fill="#1a1a1a"/>
-        <circle r="7" fill="url(#rim)"/>
-        <g style="transform-origin: center; animation: spin 1s linear infinite;">
-          <rect x="-1" y="-7" width="2" height="14" fill="#333"/>
-          <rect x="-7" y="-1" width="14" height="2" fill="#333"/>
+      <path d="M62,38 L96,38 L96,54 L66,54 Z" fill="url(#glass)"/>
+      <!-- B-pillar -->
+      <rect x="96" y="25" width="3" height="30" fill="#1a0505" opacity=".85"/>
+      <!-- Front window (windshield + driver door glass) -->
+      <path d="M100,38 L130,27 L196,27 L216,38 L210,54 L104,54 Z" fill="url(#glass)"/>
+      <!-- Window inner highlight -->
+      <path d="M104,40 L132,30 L190,30 L208,40 L204,46 L108,46 Z" fill="#fff" opacity=".07"/>
+
+      <!-- Door cut lines -->
+      <line x1="140" y1="54" x2="138" y2="78" stroke="#2a0b0b" stroke-width="1.1" opacity=".55"/>
+      <line x1="178" y1="54" x2="176" y2="78" stroke="#2a0b0b" stroke-width="1.1" opacity=".55"/>
+      <!-- Door handles -->
+      <rect x="118" y="60" width="12" height="2.5" rx="1" fill="url(#chrome)"/>
+      <rect x="152" y="60" width="12" height="2.5" rx="1" fill="url(#chrome)"/>
+      <!-- Side mirror -->
+      <path d="M200,38 L208,34 L212,36 L210,42 Z" fill="#dc2626" stroke="#2a0b0b" stroke-width=".8"/>
+
+      <!-- Headlight -->
+      <ellipse cx="248" cy="58" rx="60" ry="10" fill="url(#headGlow)" opacity=".55" class="beam"/>
+      <path d="M244,54 L256,55 C258,57 258,61 256,63 L244,64 Z" fill="#fffbe6" stroke="#9b1420" stroke-width=".8"/>
+      <!-- Grille vent -->
+      <rect x="246" y="66" width="14" height="4" rx="1" fill="#0a0a0a" opacity=".7"/>
+      <!-- Taillight -->
+      <path d="M22,54 L34,55 C35,57 35,61 34,63 L22,64 Z" fill="#dc2626" stroke="#2a0b0b" stroke-width=".8"/>
+      <circle cx="26" cy="59" r="2" fill="#ffd4d6" opacity=".9"/>
+
+      <!-- FRONT WHEEL -->
+      <g transform="translate(220, 82)">
+        <!-- Wheel well shadow -->
+        <circle r="18" fill="#000" opacity=".45"/>
+        <!-- Tyre -->
+        <circle r="16" fill="url(#tyre)"/>
+        <circle r="14" fill="#0a0a0a"/>
+        <!-- Rim -->
+        <g class="wheel-spin">
+          <circle r="10" fill="url(#wheelFace)"/>
+          <!-- 5-spoke alloy -->
+          <g fill="#1f2937">
+            <rect x="-1" y="-10" width="2" height="20" transform="rotate(0)"/>
+            <rect x="-1" y="-10" width="2" height="20" transform="rotate(72)"/>
+            <rect x="-1" y="-10" width="2" height="20" transform="rotate(144)"/>
+            <rect x="-1" y="-10" width="2" height="20" transform="rotate(216)"/>
+            <rect x="-1" y="-10" width="2" height="20" transform="rotate(288)"/>
+          </g>
+          <circle r="3" fill="#dc2626"/>
+          <circle r="1.5" fill="#0a0a0a"/>
         </g>
       </g>
-      <g transform="translate(170, 62)">
-        <circle r="12" fill="#1a1a1a"/>
-        <circle r="7" fill="url(#rim)"/>
-        <g style="transform-origin: center; animation: spin 1s linear infinite;">
-          <rect x="-1" y="-7" width="2" height="14" fill="#333"/>
-          <rect x="-7" y="-1" width="14" height="2" fill="#333"/>
+      <!-- REAR WHEEL -->
+      <g transform="translate(60, 82)">
+        <circle r="18" fill="#000" opacity=".45"/>
+        <circle r="16" fill="url(#tyre)"/>
+        <circle r="14" fill="#0a0a0a"/>
+        <g class="wheel-spin">
+          <circle r="10" fill="url(#wheelFace)"/>
+          <g fill="#1f2937">
+            <rect x="-1" y="-10" width="2" height="20" transform="rotate(0)"/>
+            <rect x="-1" y="-10" width="2" height="20" transform="rotate(72)"/>
+            <rect x="-1" y="-10" width="2" height="20" transform="rotate(144)"/>
+            <rect x="-1" y="-10" width="2" height="20" transform="rotate(216)"/>
+            <rect x="-1" y="-10" width="2" height="20" transform="rotate(288)"/>
+          </g>
+          <circle r="3" fill="#dc2626"/>
+          <circle r="1.5" fill="#0a0a0a"/>
         </g>
       </g>
     </svg>
