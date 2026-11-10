@@ -2,6 +2,8 @@ package web
 
 import (
 	"net/http"
+	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -55,7 +57,10 @@ type AuditEvent struct {
 type FileRow struct {
 	ID        uuid.UUID
 	Kind      string
+	KindLabel string
 	URL       string
+	FileName  string
+	IsImage   bool
 	Status    string
 	CreatedAt time.Time
 }
@@ -154,7 +159,11 @@ func (h *Handler) CustomerDetailPage(w http.ResponseWriter, r *http.Request) {
 	case "files":
 		rows, _ := h.Pool.Query(r.Context(), `
 			SELECT id, kind, file_path, status, created_at
-			FROM customer_documents WHERE company_id=$1 AND customer_id=$2 ORDER BY created_at DESC
+			FROM customer_documents WHERE company_id=$1 AND customer_id=$2
+			ORDER BY CASE kind
+			  WHEN 'dl_front' THEN 1 WHEN 'dl_back' THEN 2 WHEN 'insurance' THEN 3
+			  WHEN 'passport' THEN 4 WHEN 'id_card' THEN 5 WHEN 'proof_address' THEN 6
+			  ELSE 99 END, created_at DESC
 		`, cid, c.ID)
 		files := []FileRow{}
 		if rows != nil {
@@ -163,12 +172,28 @@ func (h *Handler) CustomerDetailPage(w http.ResponseWriter, r *http.Request) {
 				var fp string
 				if err := rows.Scan(&f.ID, &f.Kind, &fp, &f.Status, &f.CreatedAt); err == nil {
 					f.URL = "/uploads/" + fp
+					base := fp
+					if i := strings.LastIndex(fp, "/"); i >= 0 {
+						base = fp[i+1:]
+					}
+					f.FileName = base
+					ext := strings.ToLower(filepath.Ext(base))
+					switch ext {
+					case ".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic":
+						f.IsImage = true
+					}
+					if lbl, ok := allowedDocKinds[f.Kind]; ok {
+						f.KindLabel = lbl
+					} else {
+						f.KindLabel = f.Kind
+					}
 					files = append(files, f)
 				}
 			}
 			rows.Close()
 		}
 		data["Files"] = files
+		data["DocKinds"] = allowedDocKinds
 
 	case "audit":
 		rows, _ := h.Pool.Query(r.Context(), `
@@ -304,4 +329,99 @@ func (h *Handler) CustomerNotesSave(w http.ResponseWriter, r *http.Request) {
 		`UPDATE customers SET notes=NULLIF($1,''), updated_at=NOW() WHERE company_id=$2 AND id=$3`,
 		notes, cid, id)
 	http.Redirect(w, r, "/admin/customers/"+id+"?tab=notes&flash=Notes+saved", http.StatusSeeOther)
+}
+
+// =============================================================================
+// Customer documents — DL, insurance copy, etc. Scan once, reuse on every
+// future rental.
+// =============================================================================
+
+// allowedDocKinds — admin can only save these types; UI picker matches.
+var allowedDocKinds = map[string]string{
+	"dl_front":        "Driver license — front",
+	"dl_back":         "Driver license — back",
+	"insurance":       "Insurance copy",
+	"passport":        "Passport",
+	"id_card":         "ID card",
+	"proof_address":   "Proof of address",
+	"other":           "Other",
+}
+
+// CustomerDocUpload POST /admin/customers/{id}/documents
+// Uploads a scanned document for the customer. 'kind' selects the slot;
+// uploading the same kind replaces the previous row (one-of-each policy)
+// EXCEPT for 'other' which is additive.
+func (h *Handler) CustomerDocUpload(w http.ResponseWriter, r *http.Request) {
+	s, _ := From(r)
+	cid := *s.CompanyID
+	id := chi.URLParam(r, "id")
+	if err := r.ParseMultipartForm(12 << 20); err != nil {
+		http.Redirect(w, r, "/admin/customers/"+id+"?tab=files&err=Bad+upload", http.StatusSeeOther)
+		return
+	}
+	kind := strings.TrimSpace(r.FormValue("kind"))
+	if _, ok := allowedDocKinds[kind]; !ok {
+		http.Redirect(w, r, "/admin/customers/"+id+"?tab=files&err=Invalid+type", http.StatusSeeOther)
+		return
+	}
+	hdrs := r.MultipartForm.File["file"]
+	if len(hdrs) == 0 {
+		http.Redirect(w, r, "/admin/customers/"+id+"?tab=files&err=File+required", http.StatusSeeOther)
+		return
+	}
+	rel, err := h.Store.Save(hdrs[0], path.Join("customers", id))
+	if err != nil {
+		http.Redirect(w, r, "/admin/customers/"+id+"?tab=files&err=Save+failed", http.StatusSeeOther)
+		return
+	}
+	// One-of-each: for slotted kinds replace any prior row.
+	if kind != "other" {
+		_, _ = h.Pool.Exec(r.Context(),
+			`DELETE FROM customer_documents WHERE company_id=$1 AND customer_id=$2 AND kind=$3`,
+			cid, id, kind)
+	}
+	_, err = h.Pool.Exec(r.Context(), `
+		INSERT INTO customer_documents (company_id, customer_id, kind, file_path, status)
+		VALUES ($1,$2::uuid,$3,$4,'pending')
+	`, cid, id, kind, rel)
+	if err != nil {
+		http.Redirect(w, r, "/admin/customers/"+id+"?tab=files&err="+err.Error(), http.StatusSeeOther)
+		return
+	}
+	_ = s // audit hook later
+	http.Redirect(w, r, "/admin/customers/"+id+"?tab=files&flash=Document+saved", http.StatusSeeOther)
+}
+
+// CustomerDocDelete removes a stored document.
+func (h *Handler) CustomerDocDelete(w http.ResponseWriter, r *http.Request) {
+	s, _ := From(r)
+	cid := *s.CompanyID
+	id := chi.URLParam(r, "id")
+	did := chi.URLParam(r, "did")
+	_, _ = h.Pool.Exec(r.Context(),
+		`DELETE FROM customer_documents WHERE company_id=$1 AND customer_id=$2 AND id=$3`,
+		cid, id, did)
+	http.Redirect(w, r, "/admin/customers/"+id+"?tab=files&flash=Document+removed", http.StatusSeeOther)
+}
+
+// CustomerDocVerify toggles 'verified' on a document — staff confirms the
+// scan matches the person at pickup.
+func (h *Handler) CustomerDocVerify(w http.ResponseWriter, r *http.Request) {
+	s, _ := From(r)
+	cid := *s.CompanyID
+	id := chi.URLParam(r, "id")
+	did := chi.URLParam(r, "did")
+	_ = r.ParseForm()
+	status := r.FormValue("status")
+	if status != "verified" && status != "rejected" && status != "pending" {
+		status = "verified"
+	}
+	_, _ = h.Pool.Exec(r.Context(), `
+		UPDATE customer_documents
+		   SET status=$1,
+		       verified_by=CASE WHEN $1='verified' THEN $2::uuid ELSE verified_by END,
+		       verified_at=CASE WHEN $1='verified' THEN NOW() ELSE NULL END
+		 WHERE company_id=$3 AND customer_id=$4 AND id=$5
+	`, status, s.UserID, cid, id, did)
+	http.Redirect(w, r, "/admin/customers/"+id+"?tab=files&flash=Document+"+status, http.StatusSeeOther)
 }

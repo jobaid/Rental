@@ -238,24 +238,77 @@
     </div>
 
   {{ else if eq $t "files" }}
-    <h3>Files</h3>
-    <div class="card" style="padding: 0;">
-      <table>
-        <thead><tr><th>Kind</th><th>Status</th><th>Uploaded</th><th>File</th></tr></thead>
-        <tbody>
-        {{ range .Files }}
-          <tr>
-            <td><strong>{{ .Kind }}</strong></td>
-            <td><span class="badge {{ if eq .Status "verified" }}ok{{ else if eq .Status "rejected" }}danger{{ else }}warn{{ end }}">{{ .Status }}</span></td>
-            <td class="muted">{{ fmtTime .CreatedAt }}</td>
-            <td><a href="{{ .URL }}" target="_blank">Open</a></td>
-          </tr>
-        {{ else }}
-          <tr><td colspan="4" class="muted" style="text-align: center; padding: 40px;">No files uploaded.</td></tr>
-        {{ end }}
-        </tbody>
-      </table>
+    <div class="flex-between" style="margin-bottom: 12px;">
+      <h3 style="margin:0;">Scanned documents</h3>
+      <small class="muted">Scan once, reuse on every future rental. Repeated customers don't need to re-upload.</small>
     </div>
+
+    <!-- Upload form -->
+    <form method="post" action="/admin/customers/{{ $c.ID }}/documents" enctype="multipart/form-data" class="card" style="margin-bottom:14px; padding:14px; display:grid; grid-template-columns:2fr 3fr auto; gap:10px; align-items:flex-end;">
+      <div>
+        <label style="font-size:11px; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; font-weight:600;">Document type</label>
+        <select name="kind" required>
+          <option value="dl_front">Driver license — front</option>
+          <option value="dl_back">Driver license — back</option>
+          <option value="insurance">Insurance copy</option>
+          <option value="passport">Passport</option>
+          <option value="id_card">ID card</option>
+          <option value="proof_address">Proof of address</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; font-weight:600;">File (image or PDF)</label>
+        <input type="file" name="file" accept="image/*,application/pdf" required>
+      </div>
+      <div><button type="submit">Upload</button></div>
+    </form>
+    <p class="muted" style="font-size:12.5px; margin:0 0 14px;">
+      Uploading a new file of the same type <strong>replaces</strong> the existing one. "Other" is additive — upload as many as needed.
+    </p>
+
+    <!-- Grid of existing documents -->
+    {{ if .Files }}
+    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:14px;">
+      {{ range .Files }}
+      <div class="card" style="padding:0; overflow:hidden;">
+        <div style="position:relative; aspect-ratio:4/3; background:#f3f4f6; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+          {{ if .IsImage }}
+            <a href="{{ .URL }}" target="_blank"><img src="{{ .URL }}" alt="" style="width:100%; height:100%; object-fit:cover;"></a>
+          {{ else }}
+            <a href="{{ .URL }}" target="_blank" style="font-size:52px; color:#9ca3af; text-decoration:none;">📄</a>
+          {{ end }}
+          <span style="position:absolute; top:8px; left:8px; background:rgba(0,0,0,.65); color:#fff; font-size:10.5px; padding:3px 8px; border-radius:3px; letter-spacing:.5px; text-transform:uppercase; font-weight:700;">{{ .KindLabel }}</span>
+          <span style="position:absolute; top:8px; right:8px;" class="badge {{ if eq .Status "verified" }}ok{{ else if eq .Status "rejected" }}danger{{ else }}warn{{ end }}">{{ .Status }}</span>
+        </div>
+        <div style="padding:10px 12px; font-size:12px;">
+          <div class="muted" style="font-size:11px;">Uploaded {{ fmtDay .CreatedAt }}</div>
+          <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
+            <a href="{{ .URL }}" target="_blank" class="btn secondary small" style="font-size:11px; padding:4px 8px;">View</a>
+            {{ if ne .Status "verified" }}
+            <form method="post" action="/admin/customers/{{ $c.ID }}/documents/{{ .ID }}/verify" style="display:inline;">
+              <input type="hidden" name="status" value="verified">
+              <button class="small" style="font-size:11px; padding:4px 8px; background:#166534;">✓ Verify</button>
+            </form>
+            {{ else }}
+            <form method="post" action="/admin/customers/{{ $c.ID }}/documents/{{ .ID }}/verify" style="display:inline;">
+              <input type="hidden" name="status" value="pending">
+              <button class="small ghost" style="font-size:11px; padding:4px 8px;">Un-verify</button>
+            </form>
+            {{ end }}
+            <form method="post" action="/admin/customers/{{ $c.ID }}/documents/{{ .ID }}/delete" style="display:inline; margin-left:auto;" onsubmit="return confirm('Delete this document? The file is removed from the record.');">
+              <button class="small" style="font-size:11px; padding:4px 8px; color:#fff; background:#dc2626;">Delete</button>
+            </form>
+          </div>
+        </div>
+      </div>
+      {{ end }}
+    </div>
+    {{ else }}
+    <div class="card muted" style="text-align:center; padding:40px;">
+      No documents on file yet. Upload the driver license (front + back) and insurance copy using the form above.
+    </div>
+    {{ end }}
 
   {{ else if eq $t "notes" }}
     <h3>Internal notes</h3>
