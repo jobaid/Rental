@@ -548,6 +548,46 @@ func (h *Handler) BookPost(w http.ResponseWriter, r *http.Request) {
 		if _, ierr := h.EnsurePreInvoice(ctx, cid, rid); ierr != nil {
 			log.Printf("pre-invoice: %v", ierr)
 		}
+		// Automated booking confirmation email with all details + portal
+		// login if they set a password. Best-effort; never fails the booking.
+		var insLabel string
+		if insuranceCode != "" {
+			_ = h.Pool.QueryRow(ctx,
+				`SELECT name FROM insurance_catalog WHERE company_id=$1 AND code=$2`,
+				cid, insuranceCode).Scan(&insLabel)
+		}
+		cuUUID, _ := uuid.Parse(custID)
+		portalPW := ""
+		if len(password) >= 8 {
+			portalPW = password
+		}
+		var vehLabel string
+		_ = h.Pool.QueryRow(ctx,
+			`SELECT COALESCE(year::text,'')||' '||COALESCE(make,'')||' '||COALESCE(model,'') FROM vehicles WHERE id=$1`,
+			vid).Scan(&vehLabel)
+		vehLabel = strings.TrimSpace(vehLabel)
+		go h.sendBookingConfirmation(context.Background(), cid, BookingConfirmPayload{
+			ResID:          rid,
+			BookingNumber:  bookingNumber,
+			ToEmail:        email,
+			CustomerName:   first + " " + last,
+			CustomerFirst:  first,
+			CustomerID:     cuUUID,
+			VehicleLabel:   vehLabel,
+			PickupAt:       from.Format("Mon 02 Jan 2006 · 15:04"),
+			ReturnAt:       to.Format("Mon 02 Jan 2006 · 15:04"),
+			Days:           pricing.Days,
+			DailyRateCents: pricing.DailyRateCents,
+			SubtotalCents:  pricing.SubtotalCents,
+			InsuranceLabel: insLabel,
+			InsuranceCents: insuranceTotal,
+			TaxLabel:       pricing.TaxLabel,
+			TaxRatePct:     pricing.TaxRatePct,
+			TaxCents:       pricing.TaxCents,
+			TotalCents:     totalWithInsurance,
+			DepositCents:   deposit,
+			PortalPassword: portalPW,
+		})
 	}
 	if sess != nil {
 		_ = SetCookie(w, h.Secret, *sess, 24*30)
