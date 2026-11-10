@@ -85,20 +85,54 @@ func statusClass(v any) string {
 	}
 }
 
-func orStr(a, b any) any {
-	if a == nil { return b }
-	switch v := a.(type) {
-	case *string:
-		if v == nil || *v == "" { return b }
-		return *v
-	case string:
-		if v == "" { return b }
-		return v
-	case *int:
-		if v == nil { return b }
-		return *v
+// orStr is variadic — returns the first non-empty / non-nil / non-false arg.
+// Mirrors Go template's built-in `or` for booleans but also unwraps *string
+// / string / *int so "empty string" and "nil pointer" count as false.
+func orStr(values ...any) any {
+	for _, v := range values {
+		if truthy(v) {
+			return unwrap(v)
+		}
 	}
-	return a
+	if len(values) == 0 {
+		return ""
+	}
+	return values[len(values)-1]
+}
+
+func truthy(v any) bool {
+	if v == nil {
+		return false
+	}
+	switch x := v.(type) {
+	case bool:
+		return x
+	case string:
+		return x != ""
+	case *string:
+		return x != nil && *x != ""
+	case int:
+		return x != 0
+	case *int:
+		return x != nil
+	}
+	return true
+}
+
+func unwrap(v any) any {
+	switch x := v.(type) {
+	case *string:
+		if x == nil {
+			return ""
+		}
+		return *x
+	case *int:
+		if x == nil {
+			return 0
+		}
+		return *x
+	}
+	return v
 }
 
 type ReservationLite interface {
