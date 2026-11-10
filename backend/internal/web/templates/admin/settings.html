@@ -85,7 +85,7 @@
     <div><label>Minimum rental hours</label><input type="number" name="minHours" value="{{ .Rental.minHours }}"></div>
     <div><label>Maximum rental days</label><input type="number" name="maxDays" value="{{ .Rental.maxDays }}"></div>
     <div><label>Return grace period (minutes)</label><input type="number" name="graceMinutes" value="{{ .Rental.graceMinutes }}"></div>
-    <div><label>Default deposit (cents)</label><input type="number" name="depositDefaultCents" value="{{ .Rental.depositDefaultCents }}"></div>
+    <div><label>Default security deposit ($)</label><input type="number" step="0.01" min="0" name="depositDefaultCents" value="{{ .Rental.depositDefaultCents }}"><small class="muted" style="font-size:11.5px;">Stored in cents. Used when a vehicle has no deposit set.</small></div>
   </div>
 
   <button style="margin-top:14px;">Save all settings</button>

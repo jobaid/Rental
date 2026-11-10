@@ -487,16 +487,43 @@ func (h *Handler) BookPost(w http.ResponseWriter, r *http.Request) {
 	}
 	totalWithInsurance := pricing.TotalCents + insuranceTotal
 
+	// Security deposit: prefer the vehicle's own deposit_cents, fall back to
+	// the company's default (settings.rental.depositDefaultCents), else $200.
+	deposit := 20000
+	_ = tx.QueryRow(ctx, `SELECT deposit_cents FROM vehicles WHERE id=$1`, vid).Scan(&deposit)
+	if deposit <= 0 {
+		var raw []byte
+		if err := tx.QueryRow(ctx,
+			`SELECT value FROM settings WHERE company_id=$1 AND key='rental'`, cid).Scan(&raw); err == nil {
+			m := map[string]any{}
+			if jsonUnmarshal(raw, &m) == nil {
+				switch v := m["depositDefaultCents"].(type) {
+				case float64:
+					if int(v) > 0 {
+						deposit = int(v)
+					}
+				case int:
+					if v > 0 {
+						deposit = v
+					}
+				}
+			}
+		}
+	}
+	if deposit <= 0 {
+		deposit = 20000
+	}
+
 	var bookingNumber, resID string
 	err = tx.QueryRow(ctx, `
 		INSERT INTO reservations (company_id, customer_id, vehicle_id, pickup_at, return_at, status,
 		  daily_rate_cents, rental_days, subtotal_cents, tax_cents, total_cents,
-		  insurance_code, insurance_total_cents, source)
-		VALUES ($1,$2::uuid,$3::uuid,$4,$5,'pending',$6,$7,$8,$9,$10,NULLIF($11,''),$12,'customer')
+		  insurance_code, insurance_total_cents, security_deposit_cents, source)
+		VALUES ($1,$2::uuid,$3::uuid,$4,$5,'pending',$6,$7,$8,$9,$10,NULLIF($11,''),$12,$13,'customer')
 		RETURNING id, booking_number
 	`, cid, custID, vid, from, to, pricing.DailyRateCents, pricing.Days,
 		pricing.SubtotalCents, pricing.TaxCents, totalWithInsurance,
-		insuranceCode, insuranceTotal).Scan(&resID, &bookingNumber)
+		insuranceCode, insuranceTotal, deposit).Scan(&resID, &bookingNumber)
 	if err != nil {
 		if strings.Contains(err.Error(), "no_overlap") {
 			http.Error(w, "That car was just booked for those dates. Pick another one.", 409)
@@ -1118,6 +1145,9 @@ type ReservationDetail struct {
 	PaidCents          int
 	ReadyForPickupAt   *time.Time
 	ReadyForPickupNote *string
+	SecurityDepositCents int
+	DepositChargedAt   *time.Time
+	DepositRefundedAt  *time.Time
 }
 
 type Hist struct{ CreatedAt time.Time; FromStatus *string; ToStatus string }
@@ -1133,7 +1163,8 @@ func (h *Handler) ReservationDetailPage(w http.ResponseWriter, r *http.Request) 
 		       CASE WHEN v.id IS NULL THEN NULL ELSE COALESCE(v.year::text,'')||' '||COALESCE(v.make,'')||' '||COALESCE(v.model,'') END,
 		       r.pickup_at, r.return_at, r.daily_rate_cents, r.rental_days,
 		       r.subtotal_cents, r.extras_cents, r.tax_cents, r.total_cents, r.paid_cents,
-		       r.ready_for_pickup_at, r.ready_for_pickup_note
+		       r.ready_for_pickup_at, r.ready_for_pickup_note,
+		       r.security_deposit_cents, r.deposit_charged_at, r.deposit_refunded_at
 		FROM reservations r
 		LEFT JOIN customers cu ON cu.id=r.customer_id
 		LEFT JOIN vehicles v ON v.id=r.vehicle_id
@@ -1141,7 +1172,8 @@ func (h *Handler) ReservationDetailPage(w http.ResponseWriter, r *http.Request) 
 	`, cid, id).Scan(&d.ID, &d.BookingNumber, &d.Status, &d.CustomerName, &d.VehicleLabel,
 		&d.PickupAt, &d.ReturnAt, &d.DailyRateCents, &d.RentalDays,
 		&d.SubtotalCents, &d.ExtrasCents, &d.TaxCents, &d.TotalCents, &d.PaidCents,
-		&d.ReadyForPickupAt, &d.ReadyForPickupNote)
+		&d.ReadyForPickupAt, &d.ReadyForPickupNote,
+		&d.SecurityDepositCents, &d.DepositChargedAt, &d.DepositRefundedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			http.NotFound(w, r)
@@ -1174,6 +1206,7 @@ func (h *Handler) ReservationDetailPage(w http.ResponseWriter, r *http.Request) 
 		"TollsTotal": tollsTotal,
 		"Flash":      r.URL.Query().Get("flash"),
 		"PhotoLink":  r.URL.Query().Get("link"),
+		"Paylink":    r.URL.Query().Get("paylink"),
 		"Err":        r.URL.Query().Get("err"),
 	})
 }

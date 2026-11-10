@@ -470,6 +470,7 @@ type stripeSession struct {
 		Metadata        struct {
 			InvoiceID     string `json:"invoice_id"`
 			ReservationID string `json:"reservation_id"`
+			Purpose       string `json:"purpose"`
 		} `json:"metadata"`
 	} `json:"object"`
 }
@@ -480,6 +481,22 @@ func (h *Handler) markSessionPaid(ctx context.Context, cid uuid.UUID, data json.
 		return err
 	}
 	sess := s.Object
+
+	// Deposit charges never touch the invoice — they're a separate payments row.
+	if sess.Metadata.Purpose == "security_deposit" {
+		_, _ = h.Pool.Exec(ctx, `
+			INSERT INTO payments (company_id, reservation_id, amount_cents, method, status,
+			                      stripe_session_id, stripe_payment_intent, reference)
+			VALUES ($1,$2::uuid,$3,'stripe','succeeded',$4,NULLIF($5,''),'security_deposit')
+			ON CONFLICT (stripe_session_id) DO UPDATE
+			  SET status='succeeded', stripe_payment_intent=COALESCE(EXCLUDED.stripe_payment_intent, payments.stripe_payment_intent)
+		`, cid, nullIfEmpty(sess.Metadata.ReservationID), sess.AmountTotal, sess.ID, sess.PaymentIntent)
+		_, _ = h.Pool.Exec(ctx,
+			`UPDATE reservations SET deposit_charged_at=NOW() WHERE company_id=$1 AND id=$2`,
+			cid, sess.Metadata.ReservationID)
+		return nil
+	}
+
 	invID := sess.Metadata.InvoiceID
 	if invID == "" {
 		invID = sess.ClientReference
@@ -498,7 +515,6 @@ func (h *Handler) markSessionPaid(ctx context.Context, cid uuid.UUID, data json.
 	if err != nil {
 		return err
 	}
-	// Mark the invoice paid + bump the reservation's paid_cents.
 	_, _ = h.Pool.Exec(ctx, `
 		UPDATE invoices SET status='paid', paid_at=NOW(), updated_at=NOW()
 		 WHERE company_id=$1 AND id=$2`, cid, invID)

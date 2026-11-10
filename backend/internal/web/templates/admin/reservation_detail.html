@@ -20,6 +20,16 @@
 
 {{ if .Flash }}<div class="ok">{{ .Flash }}</div>{{ end }}
 {{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
+{{ if .Paylink }}
+<div class="card" style="background:#ecfeff; border-color:#06b6d4; margin-bottom:14px;">
+  <strong>💳 Stripe link ready.</strong> Copy and send to the customer:
+  <div style="display:flex; gap:8px; margin-top:8px;">
+    <input id="paylinkbox2" type="text" value="{{ .Paylink }}" readonly style="flex:1; font-family:monospace; font-size:13px;">
+    <button type="button" class="secondary" onclick="navigator.clipboard.writeText(document.getElementById('paylinkbox2').value); this.textContent='✓ Copied'">Copy</button>
+    <a href="{{ .Paylink }}" target="_blank" class="btn secondary">Open</a>
+  </div>
+</div>
+{{ end }}
 {{ if .PhotoLink }}
 <div class="card" style="background: var(--accent-soft); border-color: var(--accent); margin-bottom: 20px;">
   <strong>Photo-upload link ready.</strong> Share this with the customer (email was queued):
@@ -122,6 +132,49 @@
     {{ end }}
     </tbody>
   </table>
+</div>
+
+<a id="deposit"></a>
+<div class="card" style="margin-top: 20px;">
+  <div class="flex-between" style="margin-bottom:10px;">
+    <h3 style="margin:0;">Security deposit</h3>
+    <small class="muted">Refundable hold charged via Stripe. Not applied to rental balance.</small>
+  </div>
+
+  <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+    <!-- Current amount + inline edit -->
+    <div style="flex:1; min-width:220px;">
+      <form method="post" action="/admin/reservations/{{ .R.ID }}/deposit" style="display:flex; gap:8px; align-items:flex-end;">
+        <div style="flex:1;">
+          <label>Deposit amount ($)</label>
+          <input type="number" step="0.01" min="0" name="amountDollars" value="{{ printf "%.2f" (divf .R.SecurityDepositCents 100.0) }}">
+        </div>
+        <button class="secondary">Update</button>
+      </form>
+    </div>
+
+    <!-- Status + actions -->
+    <div style="flex:1; min-width:260px;">
+      {{ if .R.DepositRefundedAt }}
+      <div style="padding:10px 12px; background:#dbeafe; border-left:3px solid #1e40af; border-radius:6px; font-size:13px;">
+        <strong>Refund initiated</strong><br>
+        <span class="muted">{{ fmtTime .R.DepositRefundedAt.Local }}</span>
+      </div>
+      {{ else if .R.DepositChargedAt }}
+      <div style="padding:10px 12px; background:#dcfce7; border-left:3px solid #166534; border-radius:6px; font-size:13px; margin-bottom:8px;">
+        ✓ <strong>Deposit of ${{ dollars .R.SecurityDepositCents }} charged</strong> {{ fmtTime .R.DepositChargedAt.Local }}
+      </div>
+      <form method="post" action="/admin/reservations/{{ .R.ID }}/deposit/refund" onsubmit="return confirm('Refund the full deposit via Stripe?');">
+        <button style="width:100%; background:#1e40af;">Refund deposit</button>
+      </form>
+      {{ else }}
+      <form method="post" action="/admin/reservations/{{ .R.ID }}/deposit/charge">
+        <button style="width:100%;">💳 Charge $<span>{{ dollars .R.SecurityDepositCents }}</span> deposit via Stripe</button>
+      </form>
+      <small class="muted" style="display:block; margin-top:6px; font-size:12px;">Opens a Stripe link to send to the customer. Refund any time from this card.</small>
+      {{ end }}
+    </div>
+  </div>
 </div>
 
 <div class="card" style="margin-top: 20px;">
