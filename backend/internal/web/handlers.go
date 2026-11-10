@@ -468,14 +468,35 @@ func (h *Handler) BookPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Insurance: read the customer's choice from the form and look up the
+	// per-day price. Total adds (price_per_day × days) on top of the rental.
+	insuranceCode := strings.TrimSpace(r.FormValue("insurance"))
+	insuranceTotal := 0
+	if insuranceCode != "" && insuranceCode != "none" {
+		var perDay int
+		if err := tx.QueryRow(ctx,
+			`SELECT price_per_day_cents FROM insurance_catalog WHERE company_id=$1 AND code=$2 AND is_active`,
+			cid, insuranceCode).Scan(&perDay); err == nil {
+			insuranceTotal = perDay * pricing.Days
+		} else {
+			// Unknown / inactive code → treat as declined.
+			insuranceCode = ""
+		}
+	} else {
+		insuranceCode = ""
+	}
+	totalWithInsurance := pricing.TotalCents + insuranceTotal
+
 	var bookingNumber, resID string
 	err = tx.QueryRow(ctx, `
 		INSERT INTO reservations (company_id, customer_id, vehicle_id, pickup_at, return_at, status,
-		  daily_rate_cents, rental_days, subtotal_cents, tax_cents, total_cents, source)
-		VALUES ($1,$2::uuid,$3::uuid,$4,$5,'pending',$6,$7,$8,$9,$10,'customer')
+		  daily_rate_cents, rental_days, subtotal_cents, tax_cents, total_cents,
+		  insurance_code, insurance_total_cents, source)
+		VALUES ($1,$2::uuid,$3::uuid,$4,$5,'pending',$6,$7,$8,$9,$10,NULLIF($11,''),$12,'customer')
 		RETURNING id, booking_number
 	`, cid, custID, vid, from, to, pricing.DailyRateCents, pricing.Days,
-		pricing.SubtotalCents, pricing.TaxCents, pricing.TotalCents).Scan(&resID, &bookingNumber)
+		pricing.SubtotalCents, pricing.TaxCents, totalWithInsurance,
+		insuranceCode, insuranceTotal).Scan(&resID, &bookingNumber)
 	if err != nil {
 		if strings.Contains(err.Error(), "no_overlap") {
 			http.Error(w, "That car was just booked for those dates. Pick another one.", 409)

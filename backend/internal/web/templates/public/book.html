@@ -42,7 +42,7 @@
           {{ range .Insurance }}
           <label class="card" style="padding:14px; display:flex; justify-content:space-between; cursor:pointer;">
             <span class="flex">
-              <input type="radio" name="insurance" value="{{ .Code }}" {{ if .IsDefault }}checked{{ end }} style="width:auto;">
+              <input type="radio" name="insurance" value="{{ .Code }}" data-per-day="{{ .PricePerDayCents }}" data-label="{{ .Name }}" {{ if .IsDefault }}checked{{ end }} style="width:auto;" onchange="updateTotal()">
               <span>
                 <strong>{{ .Name }}</strong>
                 {{ if .Description }}<div class="muted" style="font-size:12px;">{{ .Description }}</div>{{ end }}
@@ -83,7 +83,7 @@
           I agree to the rental terms, cancellation policy, and damage policy.
         </label>
         {{ if .Err }}<div class="err">{{ .Err }}</div>{{ end }}
-        <button type="submit" style="margin-top: 14px; width: 100%; height: 46px; font-size: 15px;">Reserve for ${{ dollars .Total }}</button>
+        <button type="submit" style="margin-top: 14px; width: 100%; height: 46px; font-size: 15px;">Reserve for $<span id="btn-total">{{ dollars .Total }}</span></button>
       </div>
     </form>
 
@@ -100,11 +100,41 @@
           <span class="muted">${{ dollars .Vehicle.DailyRateCents }} &times; {{ .Days }}</span><span>${{ dollars .Base }}</span>
           <span class="muted">Subtotal</span><span>${{ dollars .Base }}</span>
           <span class="muted">{{ .TaxLabel }} ({{ .TaxRatePct }}%)</span><span>${{ dollars .TaxCents }}</span>
-          <div class="total"><span>Total</span><span>${{ dollars .Total }}</span></div>
+          <span class="muted" id="ins-row-label" style="display:none;">Insurance</span><span id="ins-row-amt" style="display:none;">$0.00</span>
+          <div class="total"><span>Total</span><span>$<span id="rail-total">{{ dollars .Total }}</span></span></div>
         </div>
         {{ if gt .Vehicle.DepositCents 0 }}<p class="muted" style="font-size: 12px; margin-top: 10px;">+ refundable deposit ${{ dollars .Vehicle.DepositCents }} held at pickup</p>{{ end }}
       </div>
     </aside>
   </div>
 </section>
+
+<script>
+  (function(){
+    var DAYS = {{ .Days }};
+    var BASE_TOTAL_CENTS = {{ .Total }}; // rental subtotal + tax, no insurance
+    function fmt(cents){ return (cents/100).toFixed(2); }
+    window.updateTotal = function(){
+      var chosen = document.querySelector('input[name="insurance"]:checked');
+      var perDay = chosen ? parseInt(chosen.getAttribute('data-per-day')||'0',10) : 0;
+      var label  = chosen ? chosen.getAttribute('data-label')||'Insurance' : 'Insurance';
+      var insCents = perDay * DAYS;
+      var total = BASE_TOTAL_CENTS + insCents;
+      // Sidebar insurance row — show only when > 0
+      var lbl = document.getElementById('ins-row-label');
+      var amt = document.getElementById('ins-row-amt');
+      if (insCents > 0) {
+        lbl.style.display = ''; amt.style.display = '';
+        lbl.textContent = label + ' (' + DAYS + ' × $' + fmt(perDay) + ')';
+        amt.textContent = '$' + fmt(insCents);
+      } else {
+        lbl.style.display = 'none'; amt.style.display = 'none';
+      }
+      document.getElementById('rail-total').textContent = fmt(total);
+      document.getElementById('btn-total').textContent  = fmt(total);
+    };
+    // Fire once on load so the default-selected insurance (if any) is already in.
+    window.updateTotal();
+  })();
+</script>
 {{end}}
