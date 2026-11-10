@@ -25,6 +25,8 @@ var funcs = template.FuncMap{
 	"divf":         func(a int, b float64) float64 { return float64(a) / b },
 	"slice":        func(s ...string) []string { return s },
 	"prettyFeature": prettyFeature,
+	"lower":         strings.ToLower,
+	"hasSuffix":     strings.HasSuffix,
 	"dict": func(values ...any) (map[string]any, error) {
 		if len(values)%2 != 0 { return nil, fmt.Errorf("dict needs even args") }
 		m := map[string]any{}

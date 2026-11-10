@@ -22,6 +22,43 @@
   <button type="submit" style="margin-top: 14px;">Update my account</button>
 </form>
 
+<!-- Homepage hero: real car video or image replacing the SVG animation. -->
+<div class="card" style="max-width: 760px; margin-bottom: 20px;">
+  <div class="flex-between" style="margin-bottom:10px;">
+    <h3 style="margin:0;">Homepage hero animation</h3>
+    <small class="muted">Replaces the stock SVG car on the landing page with your own video or GIF.</small>
+  </div>
+  <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+    <div style="width:220px; height:120px; border:1.5px dashed var(--border); border-radius:10px; background:#0a0a0a; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+      {{ if .General.heroUrl }}
+        {{ $u := .General.heroUrl }}
+        {{ if or (hasSuffix (lower (printf "%v" $u)) ".mp4") (hasSuffix (lower (printf "%v" $u)) ".webm") (hasSuffix (lower (printf "%v" $u)) ".mov") }}
+          <video src="{{ $u }}" autoplay muted loop playsinline style="max-width:100%; max-height:100%;"></video>
+        {{ else }}
+          <img src="{{ $u }}" alt="hero" style="max-width:100%; max-height:100%; object-fit:cover;">
+        {{ end }}
+      {{ else }}
+        <span style="color:#9ca3af; font-size:12px;">Using SVG fallback</span>
+      {{ end }}
+    </div>
+    <div style="flex:1; min-width:240px;">
+      <form method="post" action="/admin/settings/hero" enctype="multipart/form-data" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+        <input type="file" name="hero" accept="video/mp4,video/webm,video/quicktime,image/gif,image/png,image/jpeg,image/webp" required>
+        <button type="submit">Upload</button>
+      </form>
+      {{ if .General.heroUrl }}
+      <form method="post" action="/admin/settings/hero/remove" style="margin-top:8px;" onsubmit="return confirm('Remove the hero animation? The landing page will fall back to the SVG.');">
+        <button class="ghost" type="submit" style="color:var(--danger); padding:0; background:transparent; font-size:13px;">Remove hero</button>
+      </form>
+      {{ end }}
+      <small class="muted" style="display:block; margin-top:8px; font-size:12px;">
+        <strong>Best:</strong> MP4 (H.264) or WebM, 5–10 seconds, looped, 1280 × 720 or wider. GIF also works.
+        Upload a real car driving clip — side view works best. Max 20 MB.
+      </small>
+    </div>
+  </div>
+</div>
+
 <!-- Company branding: logo + name — reflects on the customer site header & footer. -->
 <div class="card" style="max-width: 760px; margin-bottom: 20px;">
   <div class="flex-between" style="margin-bottom:10px;">

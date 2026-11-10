@@ -19,13 +19,15 @@ import (
 // =============================================================================
 
 type Brand struct {
-	Name    string
-	LogoURL string
-	Phone   string
-	Email   string
-	Address string
-	Hours   string
-	Website string
+	Name     string
+	LogoURL  string
+	HeroURL  string // optional MP4/WebM/GIF/image shown in the homepage hero instead of the SVG
+	HeroKind string // "video" (MP4/WebM) or "image" (GIF/PNG/JPG/WebP)
+	Phone    string
+	Email    string
+	Address  string
+	Hours    string
+	Website  string
 }
 
 // loadBrand returns the first active company's branding (single-tenant mode).
@@ -62,6 +64,15 @@ func (h *Handler) loadBrand(ctx context.Context) Brand {
 		b.Name = v
 	}
 	b.LogoURL = str("logoUrl")
+	b.HeroURL = str("heroUrl")
+	// Infer type from extension so the template picks <video> vs <img>.
+	lower := strings.ToLower(b.HeroURL)
+	switch {
+	case strings.HasSuffix(lower, ".mp4"), strings.HasSuffix(lower, ".webm"), strings.HasSuffix(lower, ".mov"):
+		b.HeroKind = "video"
+	case strings.HasSuffix(lower, ".gif"), strings.HasSuffix(lower, ".png"), strings.HasSuffix(lower, ".jpg"), strings.HasSuffix(lower, ".jpeg"), strings.HasSuffix(lower, ".webp"):
+		b.HeroKind = "image"
+	}
 	b.Phone = str("phone")
 	b.Email = str("email")
 	b.Address = str("address")
@@ -111,6 +122,68 @@ func (h *Handler) LogoUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/admin/settings?flash=Logo+updated", http.StatusSeeOther)
+}
+
+// HeroUpload accepts a hero image or video for the homepage animation.
+// Supports MP4 / WebM / MOV (served as <video>), and GIF / PNG / JPG / WebP
+// (served as <img>). 20 MB cap.
+func (h *Handler) HeroUpload(w http.ResponseWriter, r *http.Request) {
+	s, _ := From(r)
+	cid := *s.CompanyID
+	if err := r.ParseMultipartForm(20 << 20); err != nil {
+		http.Redirect(w, r, "/admin/settings?err=Bad+upload", http.StatusSeeOther)
+		return
+	}
+	hdrs := r.MultipartForm.File["hero"]
+	if len(hdrs) == 0 {
+		http.Redirect(w, r, "/admin/settings?err=File+required", http.StatusSeeOther)
+		return
+	}
+	rel, err := h.Store.Save(hdrs[0], path.Join("hero", cid.String()))
+	if err != nil {
+		http.Redirect(w, r, "/admin/settings?err="+err.Error(), http.StatusSeeOther)
+		return
+	}
+	url := "/uploads/" + rel
+
+	var raw []byte
+	_ = h.Pool.QueryRow(r.Context(),
+		`SELECT value FROM settings WHERE company_id=$1 AND key='general'`, cid).Scan(&raw)
+	m := map[string]any{}
+	if len(raw) > 0 {
+		_ = jsonUnmarshal(raw, &m)
+	}
+	m["heroUrl"] = url
+	b, _ := jsonMarshal(m)
+	_, err = h.Pool.Exec(r.Context(), `
+		INSERT INTO settings (company_id, key, value) VALUES ($1,'general',$2::jsonb)
+		ON CONFLICT (company_id, key) DO UPDATE SET value=EXCLUDED.value, updated_at=NOW()
+	`, cid, string(b))
+	if err != nil {
+		http.Redirect(w, r, "/admin/settings?err="+err.Error(), http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/admin/settings?flash=Hero+animation+updated", http.StatusSeeOther)
+}
+
+// HeroRemove clears the hero URL.
+func (h *Handler) HeroRemove(w http.ResponseWriter, r *http.Request) {
+	s, _ := From(r)
+	cid := *s.CompanyID
+	var raw []byte
+	_ = h.Pool.QueryRow(r.Context(),
+		`SELECT value FROM settings WHERE company_id=$1 AND key='general'`, cid).Scan(&raw)
+	m := map[string]any{}
+	if len(raw) > 0 {
+		_ = jsonUnmarshal(raw, &m)
+	}
+	delete(m, "heroUrl")
+	b, _ := jsonMarshal(m)
+	_, _ = h.Pool.Exec(r.Context(), `
+		INSERT INTO settings (company_id, key, value) VALUES ($1,'general',$2::jsonb)
+		ON CONFLICT (company_id, key) DO UPDATE SET value=EXCLUDED.value, updated_at=NOW()
+	`, cid, string(b))
+	http.Redirect(w, r, "/admin/settings?flash=Hero+animation+removed", http.StatusSeeOther)
 }
 
 // LogoRemove clears the logo URL without touching other settings.

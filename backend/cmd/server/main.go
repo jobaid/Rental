@@ -212,6 +212,8 @@ func main() {
 		r.Post("/admin/settings", web.SettingsPost)
 		r.Post("/admin/settings/logo", web.LogoUpload)
 		r.Post("/admin/settings/logo/remove", web.LogoRemove)
+		r.Post("/admin/settings/hero", web.HeroUpload)
+		r.Post("/admin/settings/hero/remove", web.HeroRemove)
 		r.Post("/admin/settings/smtp", web.SMTPPost)
 		r.Post("/admin/settings/smtp-test", web.SMTPTest)
 		r.Post("/admin/settings/tax", web.TaxPost)
