@@ -27,6 +27,8 @@ var funcs = template.FuncMap{
 	"prettyFeature": prettyFeature,
 	"lower":         strings.ToLower,
 	"hasSuffix":     strings.HasSuffix,
+	"thisYear":      func() int { return time.Now().Year() },
+	"brandFooter":   brandFooterHTML,
 	"dict": func(values ...any) (map[string]any, error) {
 		if len(values)%2 != 0 { return nil, fmt.Errorf("dict needs even args") }
 		m := map[string]any{}

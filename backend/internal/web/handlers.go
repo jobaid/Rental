@@ -1766,7 +1766,7 @@ func (h *Handler) Settings(w http.ResponseWriter, r *http.Request) {
 	s, _ := From(r)
 	cid := *s.CompanyID
 	type kv map[string]any
-	general := kv{"businessName": "", "currency": "USD", "timezone": "UTC", "mileageUnit": "km", "phone": "", "email": "", "address": "", "hours": "", "website": "", "logoUrl": ""}
+	general := kv{"businessName": "", "currency": "USD", "timezone": "UTC", "mileageUnit": "km", "phone": "", "email": "", "address": "", "hours": "", "website": "", "logoUrl": "", "heroUrl": "", "footerHtml": ""}
 	rental := kv{"minHours": 24, "maxDays": 90, "graceMinutes": 60, "depositDefaultCents": 20000}
 	smtp := kv{"host": "", "port": "587", "user": "", "fromAddr": "", "fromName": "mosrental", "hasPassword": false}
 
@@ -1844,8 +1844,9 @@ func (h *Handler) SettingsPost(w http.ResponseWriter, r *http.Request) {
 	s, _ := From(r)
 	cid := *s.CompanyID
 	_ = r.ParseForm()
-	// Preserve the existing logoUrl so saving the general form doesn't wipe it.
-	existingLogo := ""
+	// Preserve the existing logoUrl + heroUrl so saving the general form
+	// doesn't wipe them (they're set by their own upload endpoints).
+	existingLogo, existingHero := "", ""
 	{
 		var raw []byte
 		if err := h.Pool.QueryRow(r.Context(),
@@ -1854,6 +1855,9 @@ func (h *Handler) SettingsPost(w http.ResponseWriter, r *http.Request) {
 			if jsonUnmarshal(raw, &m) == nil {
 				if s, ok := m["logoUrl"].(string); ok {
 					existingLogo = s
+				}
+				if s, ok := m["heroUrl"].(string); ok {
+					existingHero = s
 				}
 			}
 		}
@@ -1867,8 +1871,10 @@ func (h *Handler) SettingsPost(w http.ResponseWriter, r *http.Request) {
 		"address":       strings.TrimSpace(r.FormValue("address")),
 		"hours":         strings.TrimSpace(r.FormValue("hours")),
 		"website":       strings.TrimSpace(r.FormValue("website")),
+		"footerHtml":    r.FormValue("footerHtml"), // intentional: no TrimSpace so HTML with trailing newlines is kept
 		"mileageUnit":   "km",
 		"logoUrl":       existingLogo,
+		"heroUrl":       existingHero,
 	}
 	// Also keep the companies.name in sync if business name changed.
 	if bn, _ := gen["businessName"].(string); bn != "" {

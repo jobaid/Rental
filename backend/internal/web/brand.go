@@ -2,9 +2,12 @@ package web
 
 import (
 	"context"
+	"fmt"
+	"html/template"
 	"net/http"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -28,6 +31,7 @@ type Brand struct {
 	Address  string
 	Hours    string
 	Website  string
+	FooterHTML string // admin-editable bottom-of-page line; HTML allowed
 }
 
 // loadBrand returns the first active company's branding (single-tenant mode).
@@ -78,6 +82,7 @@ func (h *Handler) loadBrand(ctx context.Context) Brand {
 	b.Address = str("address")
 	b.Hours = str("hours")
 	b.Website = str("website")
+	b.FooterHTML = str("footerHtml")
 	return b
 }
 
@@ -204,6 +209,21 @@ func (h *Handler) LogoRemove(w http.ResponseWriter, r *http.Request) {
 		ON CONFLICT (company_id, key) DO UPDATE SET value=EXCLUDED.value, updated_at=NOW()
 	`, cid, string(b))
 	http.Redirect(w, r, "/admin/settings?flash=Logo+removed", http.StatusSeeOther)
+}
+
+// brandFooterHTML expands {{YEAR}} and {{COMPANY}} placeholders in the
+// admin-authored footer HTML and returns it as template.HTML so tags
+// render instead of being escaped. Called from the public layout only.
+func brandFooterHTML(b Brand) template.HTML {
+	raw := b.FooterHTML
+	raw = strings.ReplaceAll(raw, "{{YEAR}}", fmt.Sprintf("%d", time.Now().Year()))
+	raw = strings.ReplaceAll(raw, "{{COMPANY}}", b.Name)
+	raw = strings.ReplaceAll(raw, "{{PHONE}}", b.Phone)
+	raw = strings.ReplaceAll(raw, "{{EMAIL}}", b.Email)
+	raw = strings.ReplaceAll(raw, "{{ADDRESS}}", b.Address)
+	raw = strings.ReplaceAll(raw, "{{HOURS}}", b.Hours)
+	raw = strings.ReplaceAll(raw, "{{WEBSITE}}", b.Website)
+	return template.HTML(raw)
 }
 
 // Unused — suppresses the strings import warning if nothing else needs it.
