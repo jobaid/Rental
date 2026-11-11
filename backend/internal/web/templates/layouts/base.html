@@ -3,7 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{ .Title }}</title>
+  <title>{{ .Title }}{{ if and .Brand .Brand.Name }} · {{ .Brand.Name }}{{ end }}</title>
+  {{ if and .Brand .Brand.LogoURL }}
+    <link rel="icon" href="{{ .Brand.LogoURL }}">
+    <link rel="apple-touch-icon" href="{{ .Brand.LogoURL }}">
+  {{ else }}
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/static/favicon.ico" sizes="any">
+  {{ end }}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">

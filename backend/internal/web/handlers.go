@@ -53,9 +53,9 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request, name string, ti
 		data = map[string]any{}
 	}
 	data["Public"] = strings.HasPrefix(name, "public/")
-	if data["Public"].(bool) {
-		data["Brand"] = h.loadBrand(r.Context())
-	}
+	// Load brand for every page so the tab <title> and favicon reflect the
+	// configured business name + logo on both admin and public surfaces.
+	data["Brand"] = h.loadBrand(r.Context())
 	data["Title"] = title
 	data["Active"] = active
 	if s, ok := From(r); ok {
