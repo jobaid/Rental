@@ -1,8 +1,12 @@
 {{define "header"}}
 <div class="admin-top">
-  <a href="/admin" class="brand">
-    <span class="dot"></span>
-    <span>mosrental</span>
+  <a href="/admin" class="brand" style="display:flex; align-items:center; gap:10px;">
+    {{ if and .Brand .Brand.LogoURL }}
+      <img src="{{ .Brand.LogoURL }}" alt="" style="height:26px; width:auto; max-width:120px; object-fit:contain;">
+    {{ else }}
+      <span class="dot"></span>
+    {{ end }}
+    <span>{{ if and .Brand .Brand.Name }}{{ .Brand.Name }}{{ else }}mosrental{{ end }}</span>
   </a>
   <form class="search" action="/admin/reservations" method="get" role="search">
     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
