@@ -13,10 +13,10 @@
     <a href="/" class="btn secondary" style="margin-top: 16px;">Back to home</a>
   </div>
   {{ else }}
-  <div class="row" style="grid-template-columns: 1.2fr 1fr; gap: 30px;">
+  <div class="contact-grid">
     <form method="post" action="/contact" class="card reveal">
       <h3>Send us a message</h3>
-      <div class="row" style="grid-template-columns: 1fr 1fr;">
+      <div class="name-email-grid">
         <div><label>Your name</label><input name="name" required></div>
         <div><label>Email</label><input type="email" name="email" required></div>
       </div>

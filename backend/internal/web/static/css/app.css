@@ -510,6 +510,30 @@ button:focus-visible, .btn:focus-visible { outline-offset: 3px; }
 @keyframes pop   { 0% { opacity: 0; transform: translateY(14px) scale(.98); } 100% { opacity: 1; transform: none; } }
 @keyframes spin  { to { transform: rotate(360deg); } }
 
+/* ---------- Contact page responsive ---------- */
+.contact-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 30px;
+}
+.name-email-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 760px) {
+  .contact-grid { grid-template-columns: 1fr; gap: 20px; }
+  .name-email-grid { grid-template-columns: 1fr; gap: 10px; }
+  .page-hero { padding: 48px 16px 28px !important; }
+  .page-hero h1 { font-size: 26px !important; }
+  .page-hero p { font-size: 14px !important; }
+  /* Fluid padding on the outer sections */
+  body.public section[style*="padding: 48px 24px"] { padding: 24px 14px !important; }
+  /* Make the dark contact info card never overflow */
+  body.public .card[style*="linear-gradient"] { padding: 18px 16px !important; }
+  body.public .card[style*="linear-gradient"] h3 { font-size: 17px !important; }
+}
+
 /* ---------- Real uploaded car video/image hero ---------- */
 .scene.real {
   position: relative;
@@ -987,7 +1011,22 @@ body.public .site-nav a.btn.secondary {
   color: #ffffff;
 }
 body.public .nav-toggle {
-  border-color: #525252; color: #fff;
+  display: none; /* hidden by default; the mobile media query re-enables it */
+  background: transparent !important;
+  border: 1.5px solid #ffffff !important;
+  color: #ffffff !important;
+  padding: 0 !important;
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+  min-height: 0 !important;
+  cursor: pointer;
+}
+body.public .nav-toggle svg { width: 24px; height: 24px; stroke: #ffffff !important; }
+body.public .nav-toggle:hover { background: rgba(220,38,38,.2) !important; border-color: #dc2626 !important; }
+@media (max-width: 640px) {
+  body.public .nav-toggle { display: inline-flex !important; align-items: center; justify-content: center; }
 }
 
 /* Buttons default: red primary, black ghost, white outline */
