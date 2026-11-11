@@ -129,14 +129,14 @@
 
   <h3>Footer <small class="muted" style="font-weight:400; font-size:13px;">— shown at the bottom of every customer page</small></h3>
   <p class="muted" style="font-size:12.5px; margin-top:0;">
-    Leave blank for the default "© {{YEAR}} {{COMPANY}}. All rights reserved." line. HTML is allowed.
-    Placeholders: <code style="background:#f1f5f9;padding:1px 6px;border-radius:4px;">{{YEAR}}</code>
-    <code style="background:#f1f5f9;padding:1px 6px;border-radius:4px;">{{COMPANY}}</code>
-    <code style="background:#f1f5f9;padding:1px 6px;border-radius:4px;">{{PHONE}}</code>
-    <code style="background:#f1f5f9;padding:1px 6px;border-radius:4px;">{{EMAIL}}</code>
-    <code style="background:#f1f5f9;padding:1px 6px;border-radius:4px;">{{WEBSITE}}</code>
+    Leave blank for the default "© {{ "{{YEAR}}" }} {{ "{{COMPANY}}" }}. All rights reserved." line. HTML is allowed.
+    Placeholders: <code style="background:#f1f5f9;padding:1px 6px;border-radius:4px;">{{ "{{YEAR}}" }}</code>
+    <code style="background:#f1f5f9;padding:1px 6px;border-radius:4px;">{{ "{{COMPANY}}" }}</code>
+    <code style="background:#f1f5f9;padding:1px 6px;border-radius:4px;">{{ "{{PHONE}}" }}</code>
+    <code style="background:#f1f5f9;padding:1px 6px;border-radius:4px;">{{ "{{EMAIL}}" }}</code>
+    <code style="background:#f1f5f9;padding:1px 6px;border-radius:4px;">{{ "{{WEBSITE}}" }}</code>
   </p>
-  <textarea name="footerHtml" rows="3" style="font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13px;" placeholder="© {{YEAR}} {{COMPANY}}. All rights reserved. · &lt;a href=&quot;/legal&quot;&gt;Privacy&lt;/a&gt; · &lt;a href=&quot;/terms&quot;&gt;Terms&lt;/a&gt;">{{ .General.footerHtml }}</textarea>
+  <textarea name="footerHtml" rows="3" style="font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13px;" placeholder="© {{ "{{YEAR}}" }} {{ "{{COMPANY}}" }}. All rights reserved. · &lt;a href=&quot;/legal&quot;&gt;Privacy&lt;/a&gt; · &lt;a href=&quot;/terms&quot;&gt;Terms&lt;/a&gt;">{{ .General.footerHtml }}</textarea>
 
   <button style="margin-top:14px;">Save all settings</button>
 </form>
