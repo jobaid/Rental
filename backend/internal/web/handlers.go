@@ -2011,10 +2011,82 @@ func (h *Handler) SMTPTest(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin/settings?err=Fill+in+host+port+from+address+first#smtp", http.StatusSeeOther)
 		return
 	}
-	_, err := m.Send(to, "mosrental SMTP test", "Hi,\n\nThis is a test email from your mosrental Communication Center.\n\nIf you received this, your SMTP settings are working.\n\nSent by: "+s.Name)
+	brand := h.loadBrand(r.Context())
+	if brand.Name == "" {
+		brand.Name = "mosrental"
+	}
+	subject := brand.Name + " · SMTP test email"
+	htmlBody := renderTestEmailHTML(h, brand, s.Name, to)
+	textBody := "SMTP TEST — " + brand.Name + "\n\n" +
+		"This is a test email sent from the admin Settings page.\n" +
+		"If you received it, your SMTP configuration is working.\n\n" +
+		"Sent by: " + s.Name + "\n" +
+		"Delivery timestamp: " + time.Now().Format(time.RFC1123) + "\n"
+	_, err := m.SendHTML(to, subject, htmlBody, textBody)
 	if err != nil {
 		http.Redirect(w, r, "/admin/settings?err=Send+failed:+"+err.Error()+"#smtp", http.StatusSeeOther)
 		return
 	}
 	http.Redirect(w, r, "/admin/settings?flash=Test+email+sent+to+"+to+"#smtp", http.StatusSeeOther)
+}
+
+// renderTestEmailHTML — branded "SMTP works" message. Same visual language as
+// the invoice emails (black band, red accent, logo plate, contact strip).
+func renderTestEmailHTML(h *Handler, brand Brand, sender, to string) string {
+	logo := ""
+	if brand.LogoURL != "" {
+		src := brand.LogoURL
+		if !strings.HasPrefix(src, "http") && h.PublicBase != "" {
+			src = strings.TrimRight(h.PublicBase, "/") + src
+		}
+		logo = `<span style="display:inline-flex;align-items:center;justify-content:center;background:#0a0a0a;padding:8px 14px;border-radius:8px;border:2px solid #dc2626;"><img src="` + src + `" alt="" style="max-height:44px;max-width:160px;object-fit:contain;"></span>`
+	}
+	when := time.Now().Format("Mon 02 Jan 2006 · 15:04 MST")
+	contact := []string{}
+	if brand.Phone != "" {
+		contact = append(contact, "📞 "+brand.Phone)
+	}
+	if brand.Email != "" {
+		contact = append(contact, "✉ "+brand.Email)
+	}
+	if brand.Hours != "" {
+		contact = append(contact, "🕒 "+brand.Hours)
+	}
+	contactStrip := ""
+	if len(contact) > 0 {
+		contactStrip = `<div style="padding:12px 28px;background:#0a0a0a;color:#9ca3af;font-size:12px;text-align:center;border-top:4px solid #dc2626;">` + strings.Join(contact, " &nbsp;·&nbsp; ") + `</div>`
+	}
+
+	return `<!doctype html><html><head><meta charset="utf-8"><title>SMTP test</title></head>
+<body style="margin:0;background:#eceef2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#0a0a0a;">
+<div style="max-width:560px;margin:28px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08);">
+  <div style="background:#0a0a0a;color:#fff;padding:20px 28px;border-bottom:4px solid #dc2626;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+    <div>` + logo + `</div>
+    <div style="text-align:right;">
+      <div style="font-size:10.5px;letter-spacing:3px;text-transform:uppercase;opacity:.8;">SMTP Test</div>
+      <div style="font-family:monospace;font-size:14px;font-weight:600;color:#dc2626;">Delivery OK</div>
+    </div>
+  </div>
+
+  <div style="padding:30px 28px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+      <div style="width:48px;height:48px;border-radius:50%;background:#dcfce7;color:#166534;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;">✓</div>
+      <div>
+        <h2 style="margin:0;font-size:20px;color:#0a0a0a;">Your email is working.</h2>
+        <p style="margin:2px 0 0;color:#6b7280;font-size:13px;">If you can read this, outbound mail from ` + htmlEscape(brand.Name) + ` is delivering correctly.</p>
+      </div>
+    </div>
+
+    <table cellpadding="0" cellspacing="0" border="0" style="width:100%;margin-top:16px;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;font-size:13.5px;">
+      <tr><td style="padding:10px 0;color:#6b7280;width:38%;">Recipient</td><td style="padding:10px 0;font-family:monospace;">` + htmlEscape(to) + `</td></tr>
+      <tr><td style="padding:6px 0;color:#6b7280;">Sent by</td><td style="padding:6px 0;">` + htmlEscape(sender) + `</td></tr>
+      <tr><td style="padding:6px 0 10px;color:#6b7280;">Delivered</td><td style="padding:6px 0 10px;font-variant-numeric:tabular-nums;">` + when + `</td></tr>
+    </table>
+
+    <p style="margin:16px 0 0;font-size:13px;color:#4b5563;">This is an automated test message triggered from <strong>Admin → Settings → Test connection</strong>. Everything your rental system sends — booking confirmations, invoices, payment links — will arrive with this same branded template.</p>
+  </div>
+
+  ` + contactStrip + `
+</div>
+</body></html>`
 }
