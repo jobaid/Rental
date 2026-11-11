@@ -32,6 +32,7 @@ type Brand struct {
 	Hours    string
 	Website  string
 	FooterHTML string // admin-editable bottom-of-page line; HTML allowed
+	ShowStaffLogin bool // show "Staff sign in" button in public header
 }
 
 // loadBrand returns the first active company's branding (single-tenant mode).
@@ -83,6 +84,9 @@ func (h *Handler) loadBrand(ctx context.Context) Brand {
 	b.Hours = str("hours")
 	b.Website = str("website")
 	b.FooterHTML = str("footerHtml")
+	if v, ok := m["showStaffLogin"].(bool); ok {
+		b.ShowStaffLogin = v
+	}
 	return b
 }
 

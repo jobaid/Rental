@@ -138,6 +138,19 @@
   </p>
   <textarea name="footerHtml" rows="3" style="font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13px;" placeholder="© {{ "{{YEAR}}" }} {{ "{{COMPANY}}" }}. All rights reserved. · &lt;a href=&quot;/legal&quot;&gt;Privacy&lt;/a&gt; · &lt;a href=&quot;/terms&quot;&gt;Terms&lt;/a&gt;">{{ .General.footerHtml }}</textarea>
 
+  <hr style="border:0; border-top:1px solid var(--border); margin:16px 0;">
+
+  <h3>Public site options</h3>
+  <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:500;">
+    <input type="checkbox" name="showStaffLogin" {{ if .General.showStaffLogin }}checked{{ end }} style="width:auto; transform:scale(1.15);">
+    <span>Show "Staff sign in" button on the customer site header</span>
+  </label>
+  <small class="muted" style="font-size:12.5px; display:block; margin-top:6px; margin-left:26px;">
+    Off by default. Staff can always reach admin directly at
+    <code style="background:#f1f5f9;padding:1px 6px;border-radius:4px;">my.rentnridecar.com/FYI/admin</code>
+    even when the public button is hidden.
+  </small>
+
   <button style="margin-top:14px;">Save all settings</button>
 </form>
 

@@ -1766,7 +1766,7 @@ func (h *Handler) Settings(w http.ResponseWriter, r *http.Request) {
 	s, _ := From(r)
 	cid := *s.CompanyID
 	type kv map[string]any
-	general := kv{"businessName": "", "currency": "USD", "timezone": "UTC", "mileageUnit": "km", "phone": "", "email": "", "address": "", "hours": "", "website": "", "logoUrl": "", "heroUrl": "", "footerHtml": ""}
+	general := kv{"businessName": "", "currency": "USD", "timezone": "UTC", "mileageUnit": "km", "phone": "", "email": "", "address": "", "hours": "", "website": "", "logoUrl": "", "heroUrl": "", "footerHtml": "", "showStaffLogin": false}
 	rental := kv{"minHours": 24, "maxDays": 90, "graceMinutes": 60, "depositDefaultCents": 20000}
 	smtp := kv{"host": "", "port": "587", "user": "", "fromAddr": "", "fromName": "mosrental", "hasPassword": false}
 
@@ -1875,6 +1875,7 @@ func (h *Handler) SettingsPost(w http.ResponseWriter, r *http.Request) {
 		"mileageUnit":   "km",
 		"logoUrl":       existingLogo,
 		"heroUrl":       existingHero,
+		"showStaffLogin": r.FormValue("showStaffLogin") == "on",
 	}
 	// Also keep the companies.name in sync if business name changed.
 	if bn, _ := gen["businessName"].(string); bn != "" {
