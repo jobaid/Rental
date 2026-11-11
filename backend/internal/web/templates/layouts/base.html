@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{ .Title }}{{ if and .Brand .Brand.Name }} · {{ .Brand.Name }}{{ end }}</title>
+  <title>{{ if .Title }}{{ .Title }}{{ if and .Brand .Brand.Name }} · {{ .Brand.Name }}{{ end }}{{ else }}{{ if and .Brand .Brand.Name }}{{ .Brand.Name }}{{ else }}mosrental{{ end }}{{ end }}</title>
   {{ if and .Brand .Brand.LogoURL }}
     <link rel="icon" href="{{ .Brand.LogoURL }}">
     <link rel="apple-touch-icon" href="{{ .Brand.LogoURL }}">

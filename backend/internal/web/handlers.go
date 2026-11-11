@@ -114,7 +114,7 @@ func (h *Handler) Home(w http.ResponseWriter, r *http.Request) {
 	}
 	now := time.Now().Add(2 * time.Hour).Truncate(time.Hour)
 	later := now.Add(2 * 24 * time.Hour)
-	h.render(w, r, "public/home.html", "mosrental", "", map[string]any{
+	h.render(w, r, "public/home.html", "Home", "", map[string]any{
 		"Branches":    branches,
 		"DefaultFrom": now.Format("2006-01-02T15:04"),
 		"DefaultTo":   later.Format("2006-01-02T15:04"),
